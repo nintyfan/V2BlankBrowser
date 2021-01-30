@@ -29,147 +29,12 @@
 #include <string.h>
 #include <linux/limits.h>
 #include <stdbool.h>
-#if 0
-
-
-static void load_handler(WebKitWebView  *web_view,
-                         WebKitLoadEvent load_event,
-                         gpointer        user_data)
-{
-  GtkLabel *tabLabel;
-  WebKitWebResource *resource = webkit_web_view_get_main_resource(web_view);
-  const char const *uri = NULL;
-  int page_num;
-  bool is_settings;
-  
-  if (resource ) {
-    
-    uri =webkit_web_resource_get_uri(resource); 
-  }
-  if (WEBKIT_LOAD_FINISHED == load_event) {
-    
-    struct connection *conn = get_connection_by_web_view(web_view);
-    if (NULL == conn) return;
-    const char *title = webkit_web_view_get_title(conn->wv);
-    if (NULL != title && '\0' != title[0])
-      gtk_label_set_text(conn->page_title, title);
-    else if (0 == strcmp(conn->params[0], "/bin/false") && -1 != conn->pid) {
-    
-      char buffer2[PATH_MAX];
-      char buffer[PATH_MAX];
-      
-      snprintf(buffer, PATH_MAX, "/proc/%d/exe", conn->pid);
-      
-      readlink(buffer, buffer2, PATH_MAX);
-      
-      gtk_label_set_text(conn->page_title, buffer2);
-    }
-    else 
-      gtk_label_set_text(conn->page_title, conn->params[0]);
-    ++conn->ref_count;
-    webkit_web_view_run_javascript(conn->wv,  "function set_form_data(method, form) { form = JSON.parse(form); var els = document.querySelector('form[action=\"' + method + '\"]'); let rel = els; if (null == rel) return; for(let field of rel.elements) {if (field.name) {field.value = form[field.name];}}};", NULL, js_ready, conn);
-    gtk_main();
-    ++conn->ref_count;
-    webkit_web_view_run_javascript(conn->wv,  "function get_form_data(method, prefix) { var els = document.querySelector('form[action=\"' + method + '\"]'); let rel = els; if (null == rel) return; var result=prefix + '?'; for(let field of rel.elements) {if (field.name) {if (field.type == 'checkbox') {  if (field.checked) result += field.name + '=1' + '\\u0026'; } else result += field.name + '=' + field.value + '\\u0026' ;}}  if (result.substr(result.length - 1, result.length) == '\\u0026') result = result.substr(0, result.length - 1);  window.location.assign(result); };", NULL, js_ready, conn);
-    gtk_main();
-    
-    struct connection_message *msg = conn->msg;
-    struct connection_message **prev = &conn->msg;
-    while (NULL != msg) {
-       
-      const char *method = dbus_message_get_member(msg->msg);
-      const char *interface = dbus_message_get_interface(msg->msg);
-      ((struct connection*) user_data)->flags &= ~BONSOLE_FLAG_LOCKED;
-      *prev = msg->next;
-      real_handle_dbus_msg(msg->connection, msg->msg, msg->user_data);
-      
-      dbus_message_unref(msg->msg);
-      free(msg);
-      msg = *prev;
-      if ((((struct connection*) user_data)->flags & BONSOLE_FLAG_LOCKED) == BONSOLE_FLAG_LOCKED) return;
-    }
-    
-    conn->msg = NULL;
-    if (-1 == conn->pid) free_connection(conn);
-    
-    ((struct connection*) user_data)->flags &= ~BONSOLE_FLAG_LOCKED;
-  }
-}
-
-
-static GtkWidget *generate_UI_fo_command(struct connection *conn)
-{
-  
-  GtkWidget *btnBox;
-  GtkWidget *termBtn;
-  GtkWidget *termContainer;
-  GtkWidget *box;
-  GtkWidget *status_label;
-  
-  GtkWidget *web_view = webkit_web_view_new();
-  conn->wv = web_view;
-  
-  webkit_settings_set_enable_developer_extras(webkit_web_view_get_settings(web_view), true);
-  
-  
-  
-  gtk_widget_set_vexpand(GTK_WIDGET(web_view), true);
-  
-  
-  
-  conn->term = gtk_text_view_new();
-  
-  gtk_text_view_set_editable(conn->term, FALSE);
-  g_signal_connect(web_view, "load-changed", load_handler, conn);
-  //free(params);
-  
-  box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
-  GtkWidget *box2 = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-  
-  status_label = gtk_label_new("Running...");
-  conn->status_label = status_label;
-  
-  btnBox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
-  termBtn = gtk_button_new_with_label("Terminal");
-  
-  termContainer = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
-  
-  GtkWidget *command_prompt = gtk_entry_new();
-  
-  gtk_box_pack_start(termContainer, conn->term, TRUE, TRUE, 0);
-  gtk_box_pack_start(termContainer, command_prompt, FALSE, FALSE, 0);
-  gtk_widget_set_no_show_all(termContainer, TRUE);
-  
-  g_signal_connect(command_prompt, "activate", send_input, conn);
-  
-  gtk_label_set_angle(gtk_bin_get_child(termBtn), 90);
-  
-  gtk_box_pack_start(btnBox, termBtn, FALSE, FALSE, 0);
-  gtk_box_pack_start(box, box2, TRUE, TRUE, 0);
-  gtk_box_pack_start(box, conn->status_label, FALSE, FALSE, 0);
-  
-  gtk_box_pack_start(box2, conn->wv, TRUE, TRUE, 0);
-  gtk_box_pack_start(box2, btnBox, FALSE, FALSE, 0);
-  gtk_box_pack_start(box2, termContainer, FALSE, FALSE, 0);
-  gtk_widget_set_size_request(conn->term, 100, 100);
-  
-  
-  
-  g_object_set_data(box, "connection_str", conn);
-  
-  g_signal_connect(termBtn, "clicked", toggle_term_visibility, conn->term);
-  programs_conn = conn;
-  webkit_web_view_load_html(web_view, "<html><head><script type=\"text/javascript\">setTimeout(function () {var el = document.querySelector('body'); el.innerHTML = '<h1>It looks like this app not display page until specified amount of time</h1><dl><dt>Maybe it\\\'s classical console application</dt><dd>In this case, open terminal by clicking on terminal button on the right side of this window</dd><dt>App will start in some time</dt><dd>In this case you must wait</dd></dl>';}, 10000);</script></head><body></body></html>", "about:first_loading");
-  gtk_widget_show_all(web_view);
-  return box;
-}
-
-#endif
 
 static gboolean show_button( GtkWidget *widget, GdkEventMotion *event ) {
 
+  int set_to_y = 0;
   GtkWidget *parent = gtk_widget_get_parent(widget);
-  GtkWidget *overlay = gtk_widget_get_parent(parent);
+  GtkWidget *overlay = gtk_widget_get_parent(gtk_widget_get_parent(parent));
   
   if (g_object_get_data(overlay, "locked")) {
   
@@ -178,8 +43,21 @@ static gboolean show_button( GtkWidget *widget, GdkEventMotion *event ) {
   g_object_set_data(overlay, "locked", TRUE);
   
   GtkWidget *button = g_object_get_data(parent, "button");
+  GtkBox *box = g_object_get_data(parent, "navigation_btns");
+  
+  GtkAllocation *allocation = g_new(GtkAllocation, 1);
+  gtk_widget_get_allocation(widget, allocation);
+  
+  if (allocation->y != 0) {
+  
+    set_to_y = allocation->y - 100 + allocation->height;
+  }
+  gtk_fixed_move(gtk_widget_get_parent(parent), box, allocation->width - 10, set_to_y);
+  
+  g_free(allocation);
   
   gtk_widget_set_visible(button, TRUE); 
+  gtk_widget_set_visible(box, TRUE); 
   
   gtk_fixed_move(parent, button, event->x, event->y);
   
@@ -190,8 +68,10 @@ static gboolean show_button( GtkWidget *widget, GdkEventMotion *event ) {
 static gboolean hide_button( GtkWidget *widget, GdkEventMotion *event ) {
   
   GtkWidget *button = g_object_get_data(widget, "button");
+  GtkWidget *box = g_object_get_data(widget, "navigation_btns");
   g_object_set_data(widget, "locked", NULL);
   
+  gtk_widget_set_visible(box, FALSE); 
   gtk_widget_set_visible(button, FALSE); 
   return TRUE;
 }
@@ -203,11 +83,25 @@ static void go_to_addr(GtkEntry *entry, gpointer user_data)
   webkit_web_view_load_uri(view, gtk_entry_get_text(entry));
 }
 
+
+
+
+static void back_clicked(GtkWidget *widget, GdkEvent *event, gpointer user_data)
+{
+  webkit_web_view_go_back((WebKitWebView *) user_data);
+}
+
+static void forward_clicked(GtkWidget *widget, GdkEvent *event, gpointer user_data)
+{
+  webkit_web_view_go_forward((WebKitWebView *) user_data);
+}
+
 static void teleport_clicked(GtkWidget *widget, GdkEvent *event, gpointer user_data)
 {
   GtkButton *button;
   GtkBox *fixed1 = (GtkBox*) user_data;
   GtkBox *fixed2 = gtk_widget_get_parent(fixed1); 
+  GtkWidget *box = g_object_get_data(fixed1, "navigation_btns");
   const char *data = g_object_get_data(widget, "position");
   if (data && 0 == strcmp(data, "down")) {
   
@@ -215,6 +109,7 @@ static void teleport_clicked(GtkWidget *widget, GdkEvent *event, gpointer user_d
      g_object_set_data(widget, "position", "up");
      
      gtk_fixed_move(fixed2, fixed1, 0, 0);
+     gtk_fixed_move(fixed2, box, 0, 0);
   }
   else {
     
@@ -231,21 +126,36 @@ static void teleport_clicked(GtkWidget *widget, GdkEvent *event, gpointer user_d
     
     h = h - allocation->height;
     
-    gtk_fixed_move(fixed2, fixed1, 0, h); 
+    gtk_fixed_move(fixed2, fixed1, 0, h);
     
+    gtk_widget_get_allocation(fixed2, allocation);
+    
+    h = allocation->height;
+    gtk_widget_get_allocation(box, allocation);
+    h = h - allocation->height;
+    
+    gtk_fixed_move(fixed2, box, 0, h);
     g_free(allocation);
   }
   
+  box = g_object_get_data(fixed1, "navigation_btns");
   button = g_object_get_data(fixed1, "button");
   gtk_widget_set_visible(button, FALSE);  
+  gtk_widget_set_visible(box, FALSE);  
   g_object_set_data(gtk_widget_get_parent(fixed1), "locked", NULL);
+}
+
+gboolean close_app(GtkWidget *widget,GdkEvent *event, gpointer user_data)
+{
+  exit(0);
 }
 
 int main(int argc, char **argv)
 {
   
-  GtkWidget *mWindow, *button;
+  GtkWidget *mWindow, *button, *back, *forward, *home;
   GtkFixed *box;
+  GtkBox *navigation_btns;
   GtkFixed *fixed;
   GtkOverlay *overlay;
   WebKitWebView *webContent;
@@ -260,8 +170,7 @@ int main(int argc, char **argv)
   //                                                 INSTALL_PREFIX "lib/extensions");
   mWindow = gtk_window_new(GTK_WINDOW_TOPLEVEL);
   
-  //g_signal_connect(mWindow, "delete-event", ask_for_close, &pcd);
-  //g_signal_connect(mWindow, "destroy", exit_app, NULL);
+  g_signal_connect(mWindow, "delete-event", close_app, NULL);
   
   gtk_window_set_default_size(mWindow, 800, 600);
   
@@ -278,14 +187,28 @@ int main(int argc, char **argv)
   
  
   button = gtk_button_new_with_label("↓");
-
+  back = gtk_button_new_with_label("⇦");
+  forward = gtk_button_new_with_label("⇨");
+  home = gtk_button_new_with_label("⌂");
+  
+  g_signal_connect(back, "button-press-event", G_CALLBACK(back_clicked), webContent);
+  g_signal_connect(forward, "button-press-event", G_CALLBACK(forward_clicked), webContent);
+  
+  navigation_btns = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);// gtk_fixed_new();
+  
+  gtk_box_pack_start(navigation_btns, back, TRUE, FALSE, 0);
+  gtk_box_pack_start(navigation_btns, home, TRUE, FALSE, 0);
+  gtk_box_pack_start(navigation_btns, forward, TRUE, FALSE, 0);
+  
+  
+  
   gtk_widget_add_events(url, GDK_POINTER_MOTION_MASK);
   
   g_signal_connect(button, "button-press-event", G_CALLBACK(teleport_clicked), box);
   //gtk_widget_add_events(box, GDK_POINTER_MOTION_MASK);
  // g_signal_connect (url, "draw",G_CALLBACK(draw_url), NULL);
-  g_signal_connect (url, "motion_notify_event",G_CALLBACK(show_button), button);
-  g_signal_connect (overlay, "motion_notify_event",G_CALLBACK(hide_button), button);
+  g_signal_connect (url, "motion_notify_event",G_CALLBACK(show_button), NULL);
+  g_signal_connect (overlay, "motion_notify_event",G_CALLBACK(hide_button), NULL);
   
   prov = gtk_css_provider_new();
   gtk_css_provider_load_from_data(prov, "* {background-color: rgba(65,10,20, 0.8);}", -1, NULL);
@@ -301,7 +224,7 @@ int main(int argc, char **argv)
     exit(1);
   }
   
-  int height = g_value_get_int(&value2);
+  int height = g_value_get_uint(&value2);
   
 
   //gtk_fixed_put(fixed, box, 10, 10);
@@ -310,24 +233,36 @@ int main(int argc, char **argv)
   gtk_fixed_put(box, url, 0, 0);
   gtk_fixed_put(box, button, 100, 0);
   
-  g_object_set_data(overlay, "button", button);
+  
+  gtk_fixed_put(navigation_btns, forward, 0, 0);
+  gtk_fixed_put(navigation_btns, home, 0, 20);
+  gtk_fixed_put(navigation_btns, back, 0, 40);
+  
+  g_object_set_data(box, "navigation_btns", navigation_btns);
   g_object_set_data(box, "button", button);
+  g_object_set_data(overlay, "button", button);
+  g_object_set_data(overlay, "navigation_btns", navigation_btns);
   //gtk_fixed_put(fixed, url, 10, 10);
   gtk_widget_set_size_request(box, 100, height);
   gtk_widget_set_size_request(url, 80, height);
   gtk_widget_set_size_request(button, 20, height);
+  gtk_widget_set_size_request(navigation_btns, 20, 100);
+  gtk_widget_set_size_request(fixed, 100, height);
+  
+  gtk_fixed_put(fixed, navigation_btns, 0, 0);
   
   gtk_fixed_put(fixed, box, 0, 0);
   gtk_overlay_add_overlay(overlay, webContent);
   gtk_overlay_add_overlay(overlay, fixed);
-  gtk_overlay_set_overlay_pass_through(overlay, box, TRUE);
+  gtk_overlay_set_overlay_pass_through(overlay, fixed, TRUE);
   
   gtk_entry_set_text(url, "http://www.dobreprogramy.pl");
   
   gtk_container_add(mWindow, overlay);
   
   gtk_widget_show_all(mWindow);
-  gtk_widget_set_visible(button, FALSE);  
+  gtk_widget_set_visible(button, FALSE); 
+  gtk_widget_set_visible(navigation_btns, FALSE); 
 
   g_signal_connect (url, "activate", G_CALLBACK (go_to_addr), webContent);
   
