@@ -1,6 +1,6 @@
 /*
- *    Bonsole - display output of bonsole client library in graphical form
- *    Copyright (C) 2020  Lach Sławomir <slawek@lach.art.pl>
+ *    BlankBrowser - browser with respect your monitor
+ *    Copyright (C) 2021  Lach Sławomir <slawek@lach.art.pl>
  *    
  *    This program is free software: you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License as published by
