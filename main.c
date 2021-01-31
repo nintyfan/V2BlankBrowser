@@ -38,8 +38,8 @@ struct wnd_data {
   unsigned int menu_items;
 };
 
-static void switch_tab_btn(GtkWidget *widget, GdkEvent *event, gpointer user_data);
 static void aswitch_tab_btn(GtkWidget *widget, gpointer user_data);
+static void real_new_tab(GtkWidget *widget, struct wnd_data *wnd_data);
 
 static gboolean show_button( GtkWidget *widget, GdkEventMotion *event ) {
 
@@ -205,110 +205,63 @@ static GtkWidget *create_tab(const char *uri, struct wnd_data *wnd_data)
 
 static void aclose_tab(GtkWidget *widget, gpointer user_data)
 {
-  GtkWidget *menu_item = gtk_widget_get_parent(gtk_widget_get_parent(gtk_widget_get_parent(widget)));
-  GtkWidget *menu = gtk_widget_get_parent(menu_item);
+  GtkWidget *close_btn = widget;
+  GtkWidget *switch_btn = g_object_get_data(close_btn, "switch_btn");
+  GtkWidget *menu = gtk_widget_get_parent(close_btn);
   
-  g_object_ref(menu_item);
+  struct wnd_data *wnd_data = (struct wnd_data*) g_object_get_data(menu, "wnd");
   
-  gtk_widget_destroy(g_object_get_data(menu_item, "webContent"));
-  gtk_container_remove(menu, menu_item);
+  g_object_ref(close_btn);
   
-  GList *children = gtk_container_get_children(menu);
-  
-  if (menu) {
-    
-    GtkWidget *wid = g_list_nth_data(children, 0);
-    
-    if (wid) {
-      
-      
-      switch_tab(webkit_web_view_get_uri(g_object_get_data(wid, "webContent")), user_data, g_object_get_data(wid, "webContent"));
-    }
-  }
-  g_clear_list (&children, NULL);
-}
-
-static void close_tab(GtkWidget *widget, GdkEvent *event, gpointer user_data)
-{
-  GtkWidget *menu_item = gtk_widget_get_parent(gtk_widget_get_parent(widget));
-  GtkWidget *menu = gtk_widget_get_parent(menu_item);
-  
-  g_object_ref(menu_item);
-  
-  gtk_widget_destroy(g_object_get_data(menu_item, "webContent"));
-  gtk_container_remove(menu, menu_item);
+  gtk_widget_destroy(g_object_get_data(switch_btn, "webContent"));
+  gtk_container_remove(menu, close_btn);
+  gtk_container_remove(menu, switch_btn);
   
   GList *children = gtk_container_get_children(menu);
   
-  if (menu) {
+  GtkWidget *wid = g_list_nth_data(children, 1);
     
-    GtkWidget *wid = g_list_nth_data(children, 0);
-    
-    if (wid) {
+  if (wid) {
       
       
       switch_tab(webkit_web_view_get_uri(g_object_get_data(wid, "webContent")), user_data, g_object_get_data(wid, "webContent"));
-    }
+      
+      int i = 1;
+      
+      for (; i < wnd_data->menu_items + 1; i+=2) {
+        
+        gtk_menu_attach(menu, g_list_nth_data(children, i), 0, 1 , i, i+1);
+        gtk_menu_attach(menu, g_list_nth_data(children, i+1), 2, 3, i, i+1 );
+      }
+      
   }
-  g_clear_list (&children, NULL);
+  else {
   
+    real_new_tab( g_list_nth_data(children, 0), wnd_data);
+  }
+  
+  g_clear_list (&children, NULL);
 }
 
 static void real_new_tab(GtkWidget *widget, struct wnd_data *wnd_data)
 {
-  GtkEventBox *a, *b;
-  GtkBox *box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 1);
-  GtkWidget *close_btn = gtk_button_new_with_label("X");
-  GtkWidget *switch_btn = gtk_button_new_with_label("New Page");
+  GtkWidget *close_btn = gtk_menu_item_new_with_label("X");
+  GtkWidget *switch_btn = gtk_menu_item_new_with_label("New Page");
   GtkWidget *tabs_menu = gtk_widget_get_parent(widget);
-  GtkWidget *new_tab = gtk_menu_item_new();
   WebKitWebView *wv =  create_tab("about:blank", wnd_data);
   
-  g_object_set_data(new_tab, "webContent", wv);
-  gtk_menu_shell_append(tabs_menu, new_tab);
-  
-  a = gtk_event_box_new();
-  b = gtk_event_box_new();
-#if 0  
-  gtk_box_pack_start(box, switch_btn, TRUE, TRUE, 2);
-  gtk_box_pack_start(box, close_btn, TRUE, TRUE, 2);
-  gtk_container_add(new_tab, box);
-  gtk_widget_show_all(new_tab);
-#else
    
-   gtk_box_pack_start(box, a, TRUE, TRUE, 2);
-   gtk_box_pack_start(box, b, TRUE, TRUE, 2);
-   
-   gtk_container_add(a, switch_btn);
-   gtk_container_add(b, close_btn);
-   
-   gtk_container_add(new_tab, box);
-   gtk_widget_show_all(new_tab);
-#endif
+   gtk_menu_attach(tabs_menu, switch_btn, 0, 1, wnd_data->menu_items, wnd_data->menu_items + 1);
+   gtk_menu_attach(tabs_menu, close_btn, 2, 3, wnd_data->menu_items, wnd_data->menu_items + 1);
+   g_object_set_data(switch_btn, "webContent", wv);
+   g_object_set_data(close_btn, "switch_btn", switch_btn);
+   gtk_widget_show_all(switch_btn);
+   gtk_widget_show_all(close_btn);
   
-   gtk_widget_set_events(new_tab,  gtk_widget_get_events(new_tab) & ~GDK_BUTTON_PRESS_MASK);
-   
-  gtk_widget_add_events(close_btn, GDK_BUTTON_PRESS_MASK);
-  gtk_widget_add_events(switch_btn, GDK_BUTTON_PRESS_MASK);
-  
-  gtk_widget_set_sensitive(close_btn, TRUE);
-  gtk_widget_set_sensitive(switch_btn, TRUE);
-  
-  ++wnd_data.menu_items;
-#if 1  
-  g_signal_connect(close_btn, "button-press-event", G_CALLBACK(close_tab), wnd_data);
-  g_signal_connect(switch_btn, "button-press-event", G_CALLBACK(switch_tab_btn), wnd_data);
-#else
+  ++wnd_data->menu_items;
+
   g_signal_connect(close_btn, "activate", G_CALLBACK(aclose_tab), wnd_data);
   g_signal_connect(switch_btn, "activate", G_CALLBACK(aswitch_tab_btn), wnd_data);
-#endif
-}
-
-static void switch_tab_btn(GtkWidget *widget, GdkEvent *event, gpointer user_data)
-{
-
-  WebKitWebView *wv = (WebKitWebView*) g_object_get_data(gtk_widget_get_parent(gtk_widget_get_parent(widget)), "webContent");
-  switch_tab(webkit_web_view_get_uri(wv), ((struct wnd_data*) user_data), wv);
 }
 
 static void aswitch_tab_btn(GtkWidget *widget, gpointer user_data)
@@ -355,7 +308,9 @@ int main(int argc, char **argv)
   new_tab_btn = gtk_menu_item_new_with_label("+");
   
   
-  gtk_menu_attach(tabs_menu, new_tab_btn, 0, 1, 0, 1);
+  gtk_menu_attach(tabs_menu, new_tab_btn, 0, 3, 0, 1);
+  
+  g_object_set_data(tabs_menu, "wnd", &wnd_data);
   gtk_widget_show(new_tab_btn);
   
   gtk_window_set_default_size(mWindow, 800, 600);
@@ -434,7 +389,7 @@ int main(int argc, char **argv)
   g_object_set_data(box, "button", button);
   g_object_set_data(overlay, "button", button);
   g_object_set_data(overlay, "navigation_btns", navigation_btns);
-  //gtk_fixed_put(fixed, url, 10, 10);
+
   gtk_widget_set_size_request(box, 100, height);
   gtk_widget_set_size_request(url, 80, height);
   gtk_widget_set_size_request(button, 20, height);
@@ -454,7 +409,6 @@ int main(int argc, char **argv)
   wnd_data.tab_container = webContainer;
 
   real_new_tab(new_tab_btn, &wnd_data);
- // wnd_data.current_tab = create_tab("http://www.wp.pl", &wnd_data);
   
   gtk_container_add(mWindow, overlay);
   
