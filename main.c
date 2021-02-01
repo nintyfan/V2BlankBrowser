@@ -95,6 +95,17 @@ static void go_to_addr(GtkEntry *entry, gpointer user_data)
   webkit_web_view_load_uri(view, gtk_entry_get_text(entry));
 }
 
+static void goto_info_page(GtkEntry *entry, GdkEvent *event, gpointer user_data)
+{
+  WebKitWebView *view = (WebKitWebView *) ((struct wnd_data*)user_data)->current_tab;
+  /* For some reason, no new item was inserted into history, but current is replaced */
+#if 0
+  webkit_web_view_load_html(view, "<html><head><title>About BlankBrowser</title></head><body><h1>License</h1><p><strong>Copyright 2021</strong> by Sławomir Lach s l a w e k @ l a c h . a r t . p l</p><p>BlankBrowser is under <a href='https://www.gnu.org/licenses/gpl-3.0.html'>GNU/GPLv3</a></p></body></html>", NULL);
+#else
+  webkit_web_view_load_uri(view, "data:text/html;charset=utf-8,<html><head><title>About BlankBrowser</title></head><body><h1>License</h1><p><strong>Copyright 2021</strong> by Sławomir Lach s l a w e k @ l a c h . a r t . p l</p><p>BlankBrowser is under <a href='https://www.gnu.org/licenses/gpl-3.0.html'>GNU/GPLv3</a></p></body></html>");
+#endif
+}
+
 static void back_clicked(GtkWidget *widget, GdkEvent *event, gpointer user_data)
 {
   WebKitWebView *view = (WebKitWebView *) ((struct wnd_data*)user_data)->current_tab;
@@ -281,7 +292,7 @@ static void real_new_tab(GtkWidget *widget, struct wnd_data *wnd_data)
    gtk_widget_show_all(switch_btn);
    gtk_widget_show_all(close_btn);
   
-  ++wnd_data->menu_items;
+  ++(wnd_data->menu_items);
 
   g_signal_connect(wv, "load-changed", G_CALLBACK(load_fnc), wnd_data);
   
@@ -305,7 +316,7 @@ static void new_tab(GtkWidget *widget, GdkEvent *event, gpointer user_data)
 int main(int argc, char **argv)
 {
   struct wnd_data wnd_data;
-  GtkWidget *tabsPopup;
+  GtkWidget *tabsPopup, *info_btn;
   GtkWidget *mWindow, *button, *new_tab_btn, *back, *forward, *home, *tabs, *tabs_menu;
   GtkFixed *box;
   GtkBox *navigation_btns;
@@ -360,6 +371,7 @@ int main(int argc, char **argv)
   forward = gtk_button_new_with_label("⇨");
   home = gtk_button_new_with_label("⌂");
   tabs = gtk_button_new_with_label("⮛");
+  info_btn = gtk_button_new_with_label("i");
   
   g_signal_connect(tabs, "button-press-event", G_CALLBACK(show_tabs), tabs_menu);
   
@@ -372,11 +384,12 @@ int main(int argc, char **argv)
   gtk_box_pack_start(navigation_btns, home, TRUE, FALSE, 0);
   gtk_box_pack_start(navigation_btns, forward, TRUE, FALSE, 0);
   gtk_box_pack_start(navigation_btns, tabs, TRUE, FALSE, 0);
-  
+  gtk_box_pack_start(navigation_btns, info_btn, TRUE, FALSE, 0);
   
   gtk_widget_add_events(url, GDK_POINTER_MOTION_MASK);
   
   
+  g_signal_connect(info_btn, "button-press-event", G_CALLBACK(goto_info_page), &wnd_data);
   g_signal_connect(new_tab_btn, "button-press-event", G_CALLBACK(new_tab), &wnd_data);
   g_signal_connect(button, "button-press-event", G_CALLBACK(teleport_clicked), box);
   //gtk_widget_add_events(box, GDK_POINTER_MOTION_MASK);
