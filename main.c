@@ -11,7 +11,7 @@
  *    but WITHOUT ANY WARRANTY; without even the implied warranty of
  *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *    GNU General Public License for more details.
- *    
+//  *    
  *    You should have received a copy of the GNU General Public License
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
@@ -36,6 +36,7 @@ struct wnd_data {
   GtkEntry *entry;
   GtkBox *tab_container;
   unsigned int menu_items;
+  GtkWindow *m_wnd;
 };
 
 static void aswitch_tab_btn(GtkWidget *widget, gpointer user_data);
@@ -104,6 +105,27 @@ static void forward_clicked(GtkWidget *widget, GdkEvent *event, gpointer user_da
 {
   WebKitWebView *view = (WebKitWebView *) ((struct wnd_data*)user_data)->current_tab;
   webkit_web_view_go_forward((WebKitWebView *) view);
+}
+
+static void load_fnc(WebKitWebView *web_view, WebKitLoadEvent load_event, gpointer user_data)
+{
+  const char *title = NULL;
+  struct wnd_data *wnd_data = (struct wnd_data*) user_data;
+  
+  if (WEBKIT_LOAD_STARTED == load_event) {
+  
+    title = webkit_web_view_get_uri(web_view);
+  }
+  if (WEBKIT_LOAD_FINISHED == load_event) {
+    
+   title = webkit_web_view_get_title(web_view);
+  }
+  
+  if (NULL != title) {
+    gtk_menu_item_set_label(g_object_get_data(web_view, "title_tab_container"), 
+                            title);
+    gtk_window_set_title(wnd_data->m_wnd, title);
+  }
 }
 
 static void teleport_clicked(GtkWidget *widget, GdkEvent *event, gpointer user_data)
@@ -255,11 +277,14 @@ static void real_new_tab(GtkWidget *widget, struct wnd_data *wnd_data)
    gtk_menu_attach(tabs_menu, close_btn, 2, 3, wnd_data->menu_items, wnd_data->menu_items + 1);
    g_object_set_data(switch_btn, "webContent", wv);
    g_object_set_data(close_btn, "switch_btn", switch_btn);
+   g_object_set_data(wv, "title_tab_container", switch_btn);
    gtk_widget_show_all(switch_btn);
    gtk_widget_show_all(close_btn);
   
   ++wnd_data->menu_items;
 
+  g_signal_connect(wv, "load-changed", G_CALLBACK(load_fnc), wnd_data);
+  
   g_signal_connect(close_btn, "activate", G_CALLBACK(aclose_tab), wnd_data);
   g_signal_connect(switch_btn, "activate", G_CALLBACK(aswitch_tab_btn), wnd_data);
 }
@@ -300,6 +325,8 @@ int main(int argc, char **argv)
   //webkit_web_context_set_web_extensions_directory (webkit_web_context_get_default (), 
   //                                                 INSTALL_PREFIX "lib/extensions");
   mWindow = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+  
+  wnd_data.m_wnd = mWindow;
   
   g_signal_connect(mWindow, "delete-event", close_app, NULL);
   
