@@ -30,6 +30,8 @@
 #include <linux/limits.h>
 #include <stdbool.h>
 
+#include <sys/param.h>
+
 struct wnd_data {
 
   WebKitWebView *current_tab;
@@ -43,7 +45,7 @@ static void aswitch_tab_btn(GtkWidget *widget, gpointer user_data);
 static void real_new_tab(GtkWidget *widget, struct wnd_data *wnd_data);
 
 static gboolean show_button( GtkWidget *widget, GdkEventMotion *event ) {
-
+#if 0
   int set_to_y = 0;
   GtkWidget *parent = gtk_widget_get_parent((GtkWidget*)widget);
   GtkWidget *overlay = gtk_widget_get_parent((GtkWidget*)gtk_widget_get_parent(parent));
@@ -74,6 +76,7 @@ static gboolean show_button( GtkWidget *widget, GdkEventMotion *event ) {
   gtk_fixed_move((GtkFixed*)parent, button, event->x, event->y);
   
   return TRUE;
+#endif
 }
 
 
@@ -297,6 +300,7 @@ static void aclose_tab(GtkWidget *widget, gpointer user_data)
 
 static void real_new_tab(GtkWidget *widget, struct wnd_data *wnd_data)
 {
+#if 0
   GtkWidget *close_btn = gtk_menu_item_new_with_label("X");
   GtkWidget *switch_btn = gtk_menu_item_new_with_label("New Page");
   GtkWidget *tabs_menu = gtk_widget_get_parent((GtkWidget*)widget);
@@ -317,6 +321,7 @@ static void real_new_tab(GtkWidget *widget, struct wnd_data *wnd_data)
   
   g_signal_connect(close_btn, "activate", G_CALLBACK(aclose_tab), wnd_data);
   g_signal_connect(switch_btn, "activate", G_CALLBACK(aswitch_tab_btn), wnd_data);
+#endif
 }
 
 static void aswitch_tab_btn(GtkWidget *widget, gpointer user_data)
@@ -334,17 +339,45 @@ static void new_tab(GtkWidget *widget, GdkEvent *event, gpointer user_data)
   real_new_tab(widget, wnd_data);
 }
 
+gboolean window_resize(GtkWidget* self, GdkEventConfigure *event, gpointer user_data)
+{
+  GtkEntry *entry = (GtkEntry*) user_data;;
+  GtkAllocation cAllocation;
+
+  int mwidth = MAX(event->width * 0.8, event->width - 60);
+  
+  if (event->width - 60 < mwidth) {
+   
+    cAllocation.x = 0;
+    mwidth = event->width;
+  }
+  
+  
+  gtk_widget_get_allocation(entry, &cAllocation);
+  
+  cAllocation.width = mwidth;
+  cAllocation.x = (event->width - mwidth) / 2;
+  
+  gtk_widget_size_allocate(entry, &cAllocation);
+  
+  gtk_fixed_move((GtkFixed*)gtk_widget_get_parent(entry), entry, cAllocation.x, 0);
+  gtk_widget_set_size_request(entry, mwidth, cAllocation.height);
+  
+  return TRUE;
+}
+
 int main(int argc, char **argv)
 {
   struct wnd_data wnd_data;
   GtkWidget  *info_btn;
-  GtkWidget *mWindow, *button, *new_tab_btn, *back, *forward, *home, *tabs, *tabs_menu;
+  GtkWidget *mWindow, *button, *new_tab_btn, *back, *forward, *home;
   GtkFixed *box;
   GtkBox *navigation_btns;
   GtkFixed *fixed;
   GtkOverlay *overlay;
   GtkBox *webContainer;
   GtkEntry *url;
+  GtkNotebook *tabs;
   GtkCssProvider *prov;
   GValue value = G_VALUE_INIT;
   GValue value2 = G_VALUE_INIT;
@@ -356,20 +389,26 @@ int main(int argc, char **argv)
   
   //webkit_web_context_set_web_extensions_directory (webkit_web_context_get_default (), 
   //                                                 INSTALL_PREFIX "lib/extensions");
+  
+  download_manager_init();
+  
+  
+  tabs = gtk_notebook_new();
+  
   mWindow = gtk_window_new(GTK_WINDOW_TOPLEVEL);
   
   wnd_data.m_wnd = (GtkWindow*) mWindow;
   
   g_signal_connect((gpointer)mWindow, "delete-event", (GCallback)close_app, NULL);
   
-  tabs_menu = gtk_menu_new();
+  //tabs_menu = gtk_menu_new();
   
-  new_tab_btn = gtk_menu_item_new_with_label("+");
+  new_tab_btn = gtk_button_new_with_label("+");
   
   
-  gtk_menu_attach((GtkMenu*)tabs_menu, new_tab_btn, 0, 3, 0, 1);
+  //gtk_menu_attach((GtkMenu*)tabs_menu, new_tab_btn, 0, 3, 0, 1);
   
-  g_object_set_data((GObject*)tabs_menu, "wnd", &wnd_data);
+  //g_object_set_data((GObject*)tabs_menu, "wnd", &wnd_data);
   gtk_widget_show((GtkWidget*)new_tab_btn);
   
   gtk_window_set_default_size((GtkWindow*)mWindow, 800, 600);
@@ -389,10 +428,9 @@ int main(int argc, char **argv)
   back = gtk_button_new_with_label("⇦");
   forward = gtk_button_new_with_label("⇨");
   home = gtk_button_new_with_label("⌂");
-  tabs = gtk_button_new_with_label("⮛");
   info_btn = gtk_button_new_with_label("i");
   
-  g_signal_connect(tabs, "button-press-event", G_CALLBACK(show_tabs), tabs_menu);
+  //g_signal_connect(tabs, "button-press-event", G_CALLBACK(show_tabs), tabs_menu);
   
   g_signal_connect(back, "button-press-event", G_CALLBACK(back_clicked), &wnd_data);
   g_signal_connect(forward, "button-press-event", G_CALLBACK(forward_clicked), &wnd_data);
@@ -450,10 +488,11 @@ int main(int argc, char **argv)
   g_object_set_data((GObject*)overlay, "navigation_btns", navigation_btns);
 
   gtk_widget_set_size_request((GtkWidget*)box, 100, height);
-  gtk_widget_set_size_request((GtkWidget*)url, 80, height);
   gtk_widget_set_size_request((GtkWidget*)button, 20, height);
   gtk_widget_set_size_request((GtkWidget*)navigation_btns, 20, 100);
   gtk_widget_set_size_request((GtkWidget*)fixed, 100, height);
+  gtk_widget_set_size_request((GtkWidget*)url, 50, 10);
+  
   
   gtk_fixed_put((GtkFixed*)fixed, (GtkWidget*)navigation_btns, 0, 0);
   
@@ -466,14 +505,18 @@ int main(int argc, char **argv)
   
   wnd_data.entry = url;
   wnd_data.tab_container = webContainer;
-
   real_new_tab(new_tab_btn, &wnd_data);
   
+
   gtk_container_add((GtkContainer*)mWindow, (GtkWidget*)overlay);
+  
+  g_signal_connect(mWindow, "configure-event", window_resize, url);
   
   gtk_widget_show_all((GtkWidget*)mWindow);
   gtk_widget_set_visible((GtkWidget*)button, FALSE); 
   gtk_widget_set_visible((GtkWidget*)navigation_btns, FALSE); 
+  
+
 
   g_signal_connect (url, "activate", G_CALLBACK (go_to_addr), &wnd_data);
   
