@@ -37,9 +37,7 @@ struct wnd_data {
   GtkWidget *main_tab;
   GtkBox *tab_container;
   GtkWindow *m_wnd;
-  GtkWidget *r_click_wid;
-  GdkEventButton r_click_event;
-  guint timer;
+  guint32 r_click_time;
 };
 
 static WebKitWebView *get_webview(GtkWidget *widget);
@@ -205,39 +203,48 @@ static void switch_tab(GtkNotebook* self, GtkWidget* page, guint page_num, gpoin
   real_window_resize(m_wnd->m_wnd, gtk_widget_get_allocated_width(m_wnd->m_wnd), gtk_widget_get_allocated_height(m_wnd->m_wnd), box);
 }
 
-gboolean should_show_menu(gpointer user_data)
+gboolean show_widgets(GtkWidget* self, GdkEventButton *event, gpointer user_data)
 {
-  struct wnd_data *ev_store = (struct wnd_data*) user_data;
-  puts("TIMER");
-  //ev_store->r_click_event.time = event->time;
-  //gtk_main_do_event(&ev_store->r_click_event);
-  printf("WIDGET IS %p\n", ev_store->r_click_wid);
-  g_signal_emit_by_name(ev_store->r_click_wid, "button-press-event", &ev_store->r_click_event, user_data);
+  gtk_widget_set_visible(user_data, TRUE);
   
-  //gtk_propagate_event(ev_store->r_click_wid, &ev_store->r_click_event);
   return FALSE;
 }
 
 gboolean event_event(GtkWidget* self, GdkEventButton *event, gpointer user_data)
 {
   struct wnd_data *ev_store = (struct wnd_data*) user_data;
-  printf("EVENT: %d\n", event->time);
-  if (event->button == 3) {
-  printf("EVENT: %d\n", ev_store->r_click_event.time);
-  printf("WIDGET2 IS %p\n", self);  
-  if (ev_store->r_click_wid == NULL) {
-    
-      puts("BAD?");
-      ev_store->r_click_wid = self;
-      ev_store->r_click_event = *event;
-     // ev_store->timer = g_timeout_add(5000, should_show_menu, ev_store);
-      return true;
+  
+  if (event->button == 3 && ev_store->r_click_time  == 0) {  
+ 
+     ev_store->r_click_time = event->time;
+     
+     gtk_main();
+     
+     if (ev_store->r_click_time) {
+  
+       // hidding
+       GtkWidget *p = self;
+       
+       while (p) {
+       
+         if (GTK_IS_FIXED(p)) {
+         
+           break;
+        }
+         p = gtk_widget_get_parent(p);
+       }
+       
+       
+       ev_store->r_click_time = 0;
+       if (!p) {
+       
+         return FALSE;
+       }
+       
+       gtk_widget_set_visible(p,FALSE);
+       return TRUE;
     }
-    else {
-      puts("OKI");
-      ev_store->r_click_wid = NULL;
-      return FALSE;
-    }
+    ev_store->r_click_time = 0;
   }
   
   return FALSE;
@@ -245,53 +252,21 @@ gboolean event_event(GtkWidget* self, GdkEventButton *event, gpointer user_data)
 
 gboolean event_event2(GtkWidget* self, GdkEventButton *event, gpointer user_data)
 {
-#if 0
-  struct wnd_data *ev_store = (struct wnd_data*) user_data;
-  if (event->button != 3) {
-    
-    ev_store->r_click_wid = NULL;
-    g_source_remove(ev_store->timer);
-  }
-  
-  //return FALSE;
-#else
+
   struct wnd_data *ev_store = (struct wnd_data*) user_data;
   
-  if (event->button != 3 || ev_store->r_click_wid == NULL) {
+  if (event->button != 3 || ev_store->r_click_time == 0) {
   
     return FALSE;
   }
-  printf("REVENT: %d\n", event->time);
-  printf("REVENT: %d\n", event->time - ev_store->r_click_event.time);
-  if (event->time > ev_store->r_click_event.time + 5000) {
-    ev_store->r_click_event.time = event->time;
-    //gtk_main_do_event(&ev_store->r_click_event);
-     g_signal_emit_by_name(ev_store->r_click_wid, "button-press-event", &ev_store->r_click_event, user_data);
-  //  gtk_propagate_event(ev_store->r_click_wid, &ev_store->r_click_event);
-    return FALSE;
+
+  
+  if (ev_store->r_click_time + 5000 < event->time) {
+  
+    ev_store->r_click_time = 0;
   }
+  gtk_main_quit();
   
-  // hide elements
-  
-  GtkWidget *pp, *p;
-  
-  p = self;
-  
-  while (p) {
-  
-    if (GTK_IS_FIXED(p)) {
-    
-      break;
-    }
-    p = gtk_widget_get_parent(p);
-  }
-  
-  if (! p) return FALSE;
-  
-  gtk_widget_set_visible(p, FALSE);
-  
-  return TRUE;
-#endif 
 }
 
 static void real_new_tab(GtkWidget *widget, struct wnd_data *wnd_data)
@@ -407,11 +382,17 @@ gtk_overlay_set_overlay_pass_through(overlay, (GtkWidget*)fixed, TRUE);
   GtkBox *tabBox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
   GtkButton *closeBtn = gtk_button_new_with_label("X");
   
+  
+  
   gtk_box_pack_start(tabBox, tabLabel, 0, 0, 2);
   gtk_box_pack_start(tabBox, closeBtn, 0, 0, 2);
   
+  gtk_container_add(eb, tabBox);
+  
   gtk_widget_show_all(tabBox);
   
+  
+  g_signal_connect(eb, "button-press-event", show_widgets, fixed);
   
   gint position = gtk_notebook_page_num(wnd_data->tab_container, wnd_data->main_tab);
   
@@ -422,7 +403,7 @@ gtk_overlay_set_overlay_pass_through(overlay, (GtkWidget*)fixed, TRUE);
   
   //gtk_notebook_append_page((GtkNotebook*)wnd_data->tab_container, (GtkWidget*)overlay, tabBox);
   
-  gtk_notebook_insert_page((GtkNotebook*)wnd_data->tab_container, (GtkWidget*)overlay, tabBox, position - 1);
+  gtk_notebook_insert_page((GtkNotebook*)wnd_data->tab_container, (GtkWidget*)overlay, eb, position - 1);
   
   gtk_widget_set_opacity((GtkWidget*)button, 0.7);
   gtk_widget_set_opacity((GtkWidget*)home, 0.7);
@@ -558,10 +539,8 @@ int main(int argc, char **argv)
   
   wnd_data.m_wnd = (GtkWindow*) mWindow;
   
-  wnd_data.r_click_wid = NULL;
-  
-  bzero(&wnd_data.r_click_event, sizeof(wnd_data.r_click_event));
-  
+  wnd_data.r_click_time = 0;
+    
   g_signal_connect((gpointer)mWindow, "delete-event", (GCallback)close_app, NULL);
   
   
