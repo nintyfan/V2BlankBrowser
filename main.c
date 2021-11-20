@@ -1,5 +1,5 @@
 /*
- *    BlankBrowser - browser with respect your monitor
+ *    V2BlankBrowser - browser with respect your monitor
  *    Copyright (C) 2021  Lach Sławomir <slawek@lach.art.pl>
  *    
  *    This program is free software: you can redistribute it and/or modify
@@ -591,7 +591,7 @@ void create_main_page(GtkNotebook *notebook, struct wnd_data *wnd)
   
   GtkLabel *license = gtk_label_new(NULL);
   
-  gtk_label_set_markup(license, "<b><i>License</i></b>\n<b>Copyright 2021</b> by Sławomir Lach s l a w e k @ l a c h . a r t . p l\nBlankBrowser is under <a href='https://www.gnu.org/licenses/gpl-3.0.html'>GNU/GPLv3</a>");
+  gtk_label_set_markup(license, "<b><i>License</i></b>\n<b>Copyright 2021</b> by Sławomir Lach s l a w e k @ l a c h . a r t . p l\nV2BlankBrowser is under <a href='https://www.gnu.org/licenses/gpl-3.0.html'>GNU/GPLv3</a>");
   
   gtk_box_pack_start(box, license, 1, 1, 0);
   
