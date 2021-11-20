@@ -340,6 +340,13 @@ gtk_box_pack_start((GtkBox*)box, (GtkWidget*)navigation_btns, 0, 0, 0);
 gtk_box_pack_start((GtkBox*)box, (GtkWidget*)url, 1, 1, 0);
 gtk_box_pack_start((GtkBox*)box, button, 0, 0,0);
 
+gtk_widget_set_tooltip_text(url, "Right click to hide. Press right mouse button for more than five seconds to show menu. After hide, press on tab to unhide");
+gtk_widget_set_tooltip_text(button, "Right click to hide. Press right mouse button for more than five seconds to show menu. After hide, press on tab to unhide");
+gtk_widget_set_tooltip_text(home, "Right click to hide. Press right mouse button for more than five seconds to show menu. After hide, press on tab to unhide");
+gtk_widget_set_tooltip_text(forward, "Right click to hide. Press right mouse button for more than five seconds to show menu. After hide, press on tab to unhide");
+gtk_widget_set_tooltip_text(back, "Right click to hide. Press right mouse button for more than five seconds to show menu. After hide, press on tab to unhide");
+
+
 g_object_set_data((GObject*)box, "navigation_btns", navigation_btns);
 g_object_set_data((GObject*)box, "button", button);
 g_object_set_data((GObject*)overlay, "button", button);
