@@ -2,5 +2,5 @@
 Name=V2BlankBrowser
 Exec=/app/bin/V2BlankBrowser
 Type=Application
-Icon=pl.art.lach.slawek.V2BlankBrowser
+Icon=pl.art.lach.slawek.V2BlankBrowser.svg
 Categories=Game;GTK;
