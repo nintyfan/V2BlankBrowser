@@ -1,18 +1,19 @@
 {
   "id": "pl.art.lach.slawek.V2BlankBrowser",
   "runtime": "org.gnome.Platform",
-  "runtime-version": "40",
+  "runtime-version": "41",
+  
+  "finish-args" : [
+  "--device=dri",
+  "--share=ipc",
+  "--share=network",
+  "--socket=x11",
+  "--socket=pulseaudio",
+  "--filesystem=xdg-download"
+  ],
+  
   "sdk": "org.gnome.Sdk",
   "command": "V2BlankBrowser",
-  "clear": [ "*.o"],
-  "build-options" : {
-    "arch": {
-      "x86_64": {
-      },
-      "x86": {
-      }
-    }
-  },
   "modules": [
   {
     "name": "browser-app",
@@ -20,17 +21,11 @@
     "sources": [
     {
       "type": "git",
-      "url": "https://github.com/nintyfan/V2BlankBrowser.git"
+      "url": "https://github.com/nintyfan/V2BlankBrowser.git",
+      "tag": "0.8"
     }
     ]
   }
-  ],
-  
-  "finish-args" : [
-  "--device=dri",
-  "--share=ipc",
-  "--share=network",
-  "--socket=x11",
-  "--socket=pulseaudio"
   ]
+  
 }
