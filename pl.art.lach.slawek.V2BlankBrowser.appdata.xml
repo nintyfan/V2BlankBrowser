@@ -15,11 +15,11 @@
   <screenshots>
     <screenshot type="default">
       <caption>Shows information about how to hide navigation panel.</caption>
-      <image type="source" width="799" height="628">https://rcgstore.pl/Screenshot_20211120_174231.png</image>
+      <image type="source" width="800" height="628">https://rcgstore.pl/Screenshot_20211120_174231.png</image>
     </screenshot>
     <screenshot>
       <caption>Main window with some page opened.</caption>
-      <image type="source" width="800" height="628">https://rcgstore.pl/Screenshot_20211120_174331.png</image>
+      <image type="source" width="799" height="628">https://rcgstore.pl/Screenshot_20211120_174331.png</image>
     </screenshot>
   </screenshots>
   <description>
