@@ -32,15 +32,21 @@
 
 #include <sys/param.h>
 
+enum NAVIGATION_UI_SELECTION { oldschool, floating, both };
+
 struct wnd_data {
 
+  enum NAVIGATION_UI_SELECTION nav_type;
   GtkWidget *main_tab;
   GtkWidget *v1_entry;
-  GtkBox *v1_tab_container;
   GtkBox *tab_container;
   GtkWindow *m_wnd;
   guint32 r_click_time;
+  GtkWidget *tabs_menu;
+  unsigned int menu_items;
 };
+
+static void real_close_tab(GtkMenu *menu, GtkWidget *menuItem, WebKitWebView *wv, struct wnd_data *wnd_data);
 
 static WebKitWebView *get_webview(GtkWidget *widget);
 
@@ -163,8 +169,11 @@ static void load_fnc(WebKitWebView *web_view, WebKitLoadEvent load_event, gpoint
   if (NULL != title) {
     gtk_entry_set_text(g_object_get_data(web_view, "url"), uri);
     
+    gtk_entry_set_text(g_object_get_data(web_view, "v1_url"), uri);
     gtk_label_set_label(g_object_get_data((GObject*)web_view, "title_tab_container"), 
                             title);
+    gtk_menu_item_set_label(g_object_get_data((GObject*)web_view, "v1_title_tab_container"), 
+                        title);
     gtk_window_set_title((GtkWindow*)wnd_data->m_wnd, title);
   }
 }
@@ -339,6 +348,165 @@ static gboolean toolbox_leave(GtkWidget *wid, GdkEventCrossing *event)
   return FALSE;
 }
 
+static gboolean show_button( GtkWidget *widget, GdkEventMotion *event ) {
+  
+  int set_to_y = 0;
+  GtkWidget *parent = gtk_widget_get_parent((GtkWidget*)widget);
+  GtkWidget *overlay =gtk_widget_get_parent(( gtk_widget_get_parent((GtkWidget*)gtk_widget_get_parent(parent))));
+  
+  if (g_object_get_data((GObject*)overlay, "locked")) {
+    
+    return TRUE;
+  }
+
+  g_object_set_data((GObject*)overlay, "locked", (gpointer)(intptr_t)TRUE);
+  
+  GtkWidget *button = g_object_get_data((GObject*)parent, "v1_button");
+  GtkBox *box = g_object_get_data((GObject*)parent, "v1_navigation_btns");
+  
+  GtkAllocation *allocation = g_new(GtkAllocation, 1);
+  gtk_widget_get_allocation((GtkWidget*)widget, allocation);
+  
+
+  if (allocation->y != 0) {
+    
+    set_to_y = allocation->y - 100 + allocation->height;
+  }
+
+  gtk_fixed_move((GtkFixed*)gtk_widget_get_parent((GtkWidget*)parent), (GtkWidget*)box, allocation->width - 10, set_to_y);
+  
+  g_free(allocation);
+  
+  gtk_widget_set_visible((GtkWidget*)button, TRUE); 
+  gtk_widget_set_visible((GtkWidget*)box, TRUE); 
+  
+  gtk_fixed_move((GtkFixed*)parent, button, event->x, event->y);
+  
+  return TRUE;
+}
+
+
+
+static void sclose_tab(GtkWidget *widget, gpointer user_data)
+{
+  
+  
+  GtkWidget *close_btn = widget;
+  GtkWidget *switch_btn = g_object_get_data((GObject*)close_btn, "switch_btn");
+  
+
+  
+  g_object_ref(close_btn);
+  
+  //gtk_widget_destroy((GtkWidget*)g_object_get_data((GObject*)switch_btn, "webContent"));
+
+  
+  
+  WebKitWebView *wv = (WebKitWebView*) g_object_get_data((GObject*)widget, "webContent");
+  GtkOverlay *ov = gtk_widget_get_parent(gtk_widget_get_parent(gtk_widget_get_parent(wv)));
+  GtkNotebook *p;
+  GtkWidget *search;
+  GtkMenu *menu, *nmenu;
+  
+  
+  menu = gtk_widget_get_parent(widget);
+  search = widget;
+    struct wnd_data *wnd_data = (struct wnd_data*) g_object_get_data((GObject*)menu, "wnd");
+  long number = 0;
+  
+  gtk_container_remove((GtkContainer*)menu, close_btn);
+  gtk_container_remove((GtkContainer*)menu, switch_btn);
+  GList *children = gtk_container_get_children(menu);
+  
+  while (NULL != (children = g_list_next(children))) {
+    GtkWidget* widget = children->data;
+    
+    if (children->data == search) {
+      
+      break;
+    }
+    
+    ++number;
+  }
+  number  /= 2;
+  
+  gtk_notebook_remove_page(wnd_data->tab_container, number);
+  
+  children = gtk_container_get_children((GtkContainer*)menu);
+  
+  GtkWidget *wid = g_list_nth_data(children, 1);
+  
+  if (wid) {
+    
+    
+    aswitch_tab_btn( gtk_container_get_children(wid), user_data);
+    
+    int i = 1;
+    
+    for (; i < wnd_data->menu_items + 1; i+=2) {
+      
+      gtk_menu_attach((GtkMenu*) menu, g_list_nth_data(children, i), 0, 1 , i, i+1);
+      gtk_menu_attach((GtkMenu*) menu, g_list_nth_data(children, i+1), 2, 3, i, i+1 );
+    }
+    
+  }
+  else {
+    
+    real_new_tab( g_list_nth_data(children, 0), wnd_data);
+  }
+  
+  g_clear_list (&children, NULL);
+}
+
+static gboolean hide_button( GtkWidget *widget, GdkEventMotion *event ) {
+  
+  (void) event;
+  GtkAllocation alloc;
+ 
+  
+  GtkWidget *button = g_object_get_data((GObject*)widget, "v1_button");
+  GtkWidget *box = g_object_get_data((GObject*)widget, "v1_navigation_btns");
+  g_object_set_data((GObject*)widget, "locked", NULL);
+  gtk_widget_set_visible((GtkWidget*)box, FALSE); 
+  gtk_widget_set_visible((GtkWidget*)button, FALSE); 
+  
+  return TRUE;
+}
+
+static void aswitch_tab_btn(GtkWidget *widget, gpointer user_data)
+{
+  struct wnd_data *wnd_data = (struct wnd_data*) user_data;
+  WebKitWebView *wv = (WebKitWebView*) g_object_get_data((GObject*)widget, "webContent");
+  GtkOverlay *ov = gtk_widget_get_parent(gtk_widget_get_parent(gtk_widget_get_parent(wv)));
+  GtkNotebook *p;
+  GtkWidget *search;
+  GtkMenu *menu, *nmenu;
+  
+
+  menu = gtk_widget_get_parent(widget);
+  search = widget;
+  
+  long number = 0;
+  
+  
+  GList *children = gtk_container_get_children(menu);
+  
+  while (NULL != (children = g_list_next(children))) {
+    GtkWidget* widget = children->data;
+    
+    if (children->data == search) {
+      
+      break;
+    }
+    
+    ++number;
+  }
+  number  /= 2;
+
+  gtk_notebook_set_current_page(wnd_data->tab_container, number);
+
+}
+
 static void real_new_tab(GtkWidget *widget, struct wnd_data *wnd_data)
 {
 #define OVERLAY_OVER_OVERLAY
@@ -364,7 +532,27 @@ root_overlay = gtk_overlay_new();
 helper_overlay = gtk_overlay_new();
 #endif
 
+GtkWidget *close_btn = gtk_menu_item_new_with_label("X");
+GtkWidget *switch_btn = gtk_menu_item_new_with_label("New Page");
+GtkWidget *tabs_menu = wnd_data->tabs_menu;
+WebKitWebView *wv =  (WebKitWebView *)create_tab("about:blank", wnd_data);
 
+
+gtk_menu_attach((GtkMenu*)wnd_data->tabs_menu, switch_btn, 0, 1, wnd_data->menu_items, wnd_data->menu_items + 1);
+gtk_menu_attach((GtkMenu*)wnd_data->tabs_menu, close_btn, 2, 3, wnd_data->menu_items, wnd_data->menu_items + 1);
+
+gtk_widget_show_all((GtkWidget*)switch_btn);
+gtk_widget_show_all((GtkWidget*)close_btn);
+
+g_object_set_data(close_btn, "webContent", wv);
+g_object_set_data(close_btn, "switch_btn", switch_btn);
+g_object_set_data(switch_btn, "webContent", wv);
+++(wnd_data->menu_items);
+
+g_signal_connect(wv, "load-changed", G_CALLBACK(load_fnc), wnd_data);
+
+g_signal_connect(close_btn, "activate", G_CALLBACK(sclose_tab), wnd_data);
+g_signal_connect(switch_btn, "activate", G_CALLBACK(aswitch_tab_btn), wnd_data);
 fixed = (GtkFixed*) gtk_fixed_new();
 box = (GtkBox*)gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
 url = (GtkEntry*)gtk_entry_new();
@@ -460,7 +648,7 @@ g_object_set_data((GObject*)overlay, "navigation_btns", navigation_btns);
 #endif
 gtk_fixed_put((GtkFixed*)fixed, (GtkWidget*)box, 0, 0);
 
-WebKitWebView *wv =  (WebKitWebView *)create_tab("about:blank", wnd_data);
+//WebKitWebView *wv =  (WebKitWebView *)create_tab("about:blank", wnd_data);
 g_signal_connect(wv, "load-changed", G_CALLBACK(load_fnc), wnd_data);
 gtk_overlay_add_overlay(overlay, (GtkWidget*)wv);
 
@@ -532,6 +720,7 @@ gtk_overlay_set_overlay_pass_through(overlay, (GtkWidget*)fixed, TRUE);
   #endif
   
   g_object_set_data(wv, "title_tab_container", tabLabel);
+  g_object_set_data(wv, "v1_title_tab_container", switch_btn);
   g_object_set_data(wv, "url", url);
   g_signal_connect(closeBtn,"clicked", aclose_tab, wv);
   
@@ -546,16 +735,26 @@ gtk_overlay_set_overlay_pass_through(overlay, (GtkWidget*)fixed, TRUE);
   
   // Called init v1 gui and pass overlay to it
 #ifdef OVERLAY_OVER_OVERLAY  
-  init_v1_ui(wnd_data, helper_overlay);
-  
   gtk_widget_show_all((GtkWidget*)root_overlay);
+  init_v1_ui(wnd_data, helper_overlay, root_overlay);
+  
 #else
-  init_v1_ui(wnd_data, overlay);
+  
   
   gtk_widget_show_all((GtkWidget*)overlay);
+  
+  init_v1_ui(wnd_data, overlay, NULL);
 #endif
-  gtk_overlay_reorder_overlay(overlay, wv, 0);
-  gtk_overlay_reorder_overlay(overlay, fixed, 1);
+  //gtk_overlay_reorder_overlay(overlay, wv, 0);
+  //gtk_overlay_reorder_overlay(overlay, fixed, 1);
+  
+  
+  g_object_set_data(wv, "v1_url", g_object_get_data(root_overlay, "urlbar"));
+  
+  if (wnd_data->nav_type == floating) {
+  
+    gtk_widget_set_visible(box, FALSE);
+  }
 }
 
 static void new_tab(GtkWidget *widget, GdkEvent *event, gpointer user_data)
@@ -692,53 +891,6 @@ static void teleport_clicked(GtkWidget *widget, GdkEvent *event, gpointer user_d
   g_object_set_data((GObject*)gtk_widget_get_parent((GtkWidget*)fixed1), "locked", NULL);
 }
 
-static gboolean show_button( GtkWidget *widget, GdkEventMotion *event ) {
-  
-  int set_to_y = 0;
-  GtkWidget *parent = gtk_widget_get_parent((GtkWidget*)widget);
-  GtkWidget *overlay = gtk_widget_get_parent((GtkWidget*)gtk_widget_get_parent(parent));
-  
-  if (g_object_get_data((GObject*)overlay, "locked")) {
-    
-    return TRUE;
-  }
-  g_object_set_data((GObject*)overlay, "locked", (gpointer)(intptr_t)TRUE);
-  
-  GtkWidget *button = g_object_get_data((GObject*)parent, "v1_button");
-  GtkBox *box = g_object_get_data((GObject*)parent, "v1_navigation_btns");
-  
-  GtkAllocation *allocation = g_new(GtkAllocation, 1);
-  gtk_widget_get_allocation((GtkWidget*)widget, allocation);
-  
-  if (allocation->y != 0) {
-    
-    set_to_y = allocation->y - 100 + allocation->height;
-  }
-  gtk_fixed_move((GtkFixed*)gtk_widget_get_parent((GtkWidget*)parent), (GtkWidget*)box, allocation->width - 10, set_to_y);
-  
-  g_free(allocation);
-  
-  gtk_widget_set_visible((GtkWidget*)button, TRUE); 
-  gtk_widget_set_visible((GtkWidget*)box, TRUE); 
-  
-  gtk_fixed_move((GtkFixed*)parent, button, event->x, event->y);
-  
-  return TRUE;
-}
-
-static gboolean hide_button( GtkWidget *widget, GdkEventMotion *event ) {
-  
-  (void) event;
-  
-  GtkWidget *button = g_object_get_data((GObject*)widget, "v1_button");
-  GtkWidget *box = g_object_get_data((GObject*)widget, "v1_navigation_btns");
-  g_object_set_data((GObject*)widget, "locked", NULL);
-  
-  gtk_widget_set_visible((GtkWidget*)box, FALSE); 
-  gtk_widget_set_visible((GtkWidget*)button, FALSE); 
-  return TRUE;
-}
-
 static void show_tabs(GtkWidget *widget, GdkEvent *event, gpointer user_data)
 {
   (void) event;
@@ -748,11 +900,11 @@ static void show_tabs(GtkWidget *widget, GdkEvent *event, gpointer user_data)
   gtk_menu_popup_at_widget((GtkMenu*)menu, widget, GDK_GRAVITY_CENTER, GDK_GRAVITY_CENTER, NULL);
 }
 
-void init_v1_ui(struct wnd_data *wnd_data, GtkOverlay *overlay)
+void init_v1_ui(struct wnd_data *wnd_data, GtkOverlay *overlay, GtkOverlay *root_overlay)
 {
   GtkFixed *fixed;
   GtkWidget  *info_btn;
-  GtkWidget  *button, *new_tab_btn, *back, *forward, *home, *tabs, *tabs_menu;
+  GtkWidget  *button,  *back, *forward, *home, *tabs;
   GtkFixed *box;
   GtkBox *navigation_btns;
   GtkEntry *url;
@@ -760,15 +912,6 @@ void init_v1_ui(struct wnd_data *wnd_data, GtkOverlay *overlay)
   GValue value = G_VALUE_INIT;
   GValue value2 = G_VALUE_INIT;
   
-  tabs_menu = gtk_menu_new();
-  
-  new_tab_btn = gtk_menu_item_new_with_label("+");
-  
-  
-  gtk_menu_attach((GtkMenu*)tabs_menu, new_tab_btn, 0, 3, 0, 1);
-  
-  g_object_set_data((GObject*)tabs_menu, "wnd", wnd_data);
-  gtk_widget_show((GtkWidget*)new_tab_btn);
   
   
   
@@ -787,7 +930,7 @@ void init_v1_ui(struct wnd_data *wnd_data, GtkOverlay *overlay)
   tabs = gtk_button_new_with_label("⮛");
   info_btn = gtk_button_new_with_label("i");
   
-  g_signal_connect(tabs, "button-press-event", G_CALLBACK(show_tabs), tabs_menu);
+  g_signal_connect(tabs, "button-press-event", G_CALLBACK(show_tabs), wnd_data->tabs_menu);
   
   g_signal_connect(back, "button-press-event", G_CALLBACK(back_clicked), wnd_data);
   g_signal_connect(forward, "button-press-event", G_CALLBACK(forward_clicked), wnd_data);
@@ -804,12 +947,12 @@ void init_v1_ui(struct wnd_data *wnd_data, GtkOverlay *overlay)
   
   
   g_signal_connect(info_btn, "button-press-event", G_CALLBACK(goto_info_page), wnd_data);
-  g_signal_connect(new_tab_btn, "button-press-event", G_CALLBACK(new_tab), wnd_data);
+ 
   g_signal_connect(button, "button-press-event", G_CALLBACK(teleport_clicked), box);
   gtk_widget_add_events((GtkWidget*)box, GDK_POINTER_MOTION_MASK);
   // g_signal_connect (url, "draw",G_CALLBACK(draw_url), NULL);
   g_signal_connect (url, "motion_notify_event",G_CALLBACK(show_button), NULL);
-  g_signal_connect (overlay, "motion_notify_event",G_CALLBACK(hide_button), NULL);
+  g_signal_connect (root_overlay, "motion_notify_event",G_CALLBACK(hide_button), NULL);
   
   prov = gtk_css_provider_new();
   gtk_css_provider_load_from_data(prov, "* {background-color: rgba(65,10,20, 0.8);}", -1, NULL);
@@ -843,6 +986,9 @@ void init_v1_ui(struct wnd_data *wnd_data, GtkOverlay *overlay)
   g_object_set_data((GObject*)box, "v1_button", button);
   g_object_set_data((GObject*)overlay, "v1_button", button);
   g_object_set_data((GObject*)overlay, "v1_navigation_btns", navigation_btns);
+  g_object_set_data((GObject*)root_overlay, "v1_button", button);
+  g_object_set_data((GObject*)root_overlay, "v1_navigation_btns", navigation_btns);
+  g_object_set_data((GObject*)root_overlay, "urlbar", url);
   
   gtk_widget_set_size_request((GtkWidget*)box, 100, height);
   gtk_widget_set_size_request((GtkWidget*)url, 80, height);
@@ -860,34 +1006,53 @@ void init_v1_ui(struct wnd_data *wnd_data, GtkOverlay *overlay)
   gtk_overlay_set_overlay_pass_through(overlay, (GtkWidget*)fixed, TRUE);
   
   
-  wnd_data->v1_entry = url;
-  //wnd_data->v1_tab_container = webContainer;
   
   
  // gtk_container_add((GtkContainer*)wnd_data->m_wnd, (GtkWidget*)overlay);
   gtk_widget_set_visible((GtkWidget*)button, FALSE); 
   gtk_widget_set_visible((GtkWidget*)navigation_btns, FALSE); 
+  
+  gtk_widget_show_all(overlay);
+  
+  if (wnd_data->nav_type == oldschool) gtk_widget_hide(fixed);
+}
+
+static void real_close_tab(GtkMenu *menu, GtkWidget *menuItem, WebKitWebView *wv, struct wnd_data *wnd_data)
+{
+  aclose_tab(NUL, wv);
+  sclos(menuItem, wnd_data);
 }
 
 int main(int argc, char **argv)
 {
   struct wnd_data wnd_data;
   GtkWidget  *info_btn;
-  GtkWidget *mWindow, *button, *new_tab_btn, *back, *forward, *home;
+  GtkWidget *mWindow,  *button, *new_tab_btn2, *new_tab_btn, *back, *forward, *home;
   GtkNotebook *tabs;
   GtkCssProvider *prov;
   GValue value = G_VALUE_INIT;
   GValue value2 = G_VALUE_INIT;
   
   gtk_init(&argc, &argv);
+  wnd_data.menu_items = 1;
   
+    wnd_data.nav_type = both;
   //webkit_web_context_set_web_extensions_directory (webkit_web_context_get_default (), 
   //                                                 INSTALL_PREFIX "lib/extensions");
   download_manager_init();
   
-  
+    wnd_data.tabs_menu = gtk_menu_new();
   tabs = gtk_notebook_new();
   
+   new_tab_btn2 = gtk_menu_item_new_with_label("+");
+   
+   
+    g_signal_connect(new_tab_btn2, "button-press-event", G_CALLBACK(new_tab), &wnd_data);
+     gtk_menu_attach((GtkMenu*)wnd_data.tabs_menu , new_tab_btn2, 0, 3, 0, 1);
+  
+     g_object_set_data((GObject*)wnd_data.tabs_menu , "wnd", &wnd_data);
+     gtk_widget_show((GtkWidget*)new_tab_btn);
+     
   g_signal_connect(tabs, "switch-page", switch_tab, &wnd_data);
   
   create_main_page(tabs, &wnd_data);
@@ -895,6 +1060,8 @@ int main(int argc, char **argv)
   mWindow = gtk_window_new(GTK_WINDOW_TOPLEVEL);
   
   wnd_data.m_wnd = (GtkWindow*) mWindow;
+  
+
   
   wnd_data.r_click_time = 0;
     
@@ -915,6 +1082,7 @@ int main(int argc, char **argv)
 
   
   gtk_widget_show_all((GtkWidget*)mWindow);
+
 
   
   gtk_main();
