@@ -46,7 +46,7 @@ struct wnd_data {
   unsigned int menu_items;
 };
 
-static void real_close_tab(GtkMenu *menu, GtkWidget *menuItem, WebKitWebView *wv, struct wnd_data *wnd_data);
+static void real_close_tab(WebKitWebView *wv);
 
 static WebKitWebView *get_webview(GtkWidget *widget);
 
@@ -199,23 +199,7 @@ static GtkWidget *create_tab(const char *uri, struct wnd_data *wnd_data)
 
 static void aclose_tab(GtkWidget *widget, gpointer user_data)
 {
-  
-  GtkWidget *p, *pp;
-  
-  pp = (GtkWidget*)user_data;
-  p = gtk_widget_get_parent(pp);
-  
-  while (p) {
-    
-    if (GTK_IS_NOTEBOOK(p)) {
-      
-      gtk_notebook_remove_page(p, gtk_notebook_page_num(p,pp) );
-      break;
-    }
-    
-    pp = p;
-    p = gtk_widget_get_parent(p);
-  }
+  real_close_tab(user_data);
 }
 static void switch_tab(GtkNotebook* self, GtkWidget* page, guint page_num, gpointer user_data)
 {
@@ -389,73 +373,8 @@ static gboolean show_button( GtkWidget *widget, GdkEventMotion *event ) {
 
 static void sclose_tab(GtkWidget *widget, gpointer user_data)
 {
-  
-  
-  GtkWidget *close_btn = widget;
-  GtkWidget *switch_btn = g_object_get_data((GObject*)close_btn, "switch_btn");
-  
+  real_close_tab(g_object_get_data(widget, "webContent"));
 
-  
-  g_object_ref(close_btn);
-  
-  //gtk_widget_destroy((GtkWidget*)g_object_get_data((GObject*)switch_btn, "webContent"));
-
-  
-  
-  WebKitWebView *wv = (WebKitWebView*) g_object_get_data((GObject*)widget, "webContent");
-  GtkOverlay *ov = gtk_widget_get_parent(gtk_widget_get_parent(gtk_widget_get_parent(wv)));
-  GtkNotebook *p;
-  GtkWidget *search;
-  GtkMenu *menu, *nmenu;
-  
-  
-  menu = gtk_widget_get_parent(widget);
-  search = widget;
-    struct wnd_data *wnd_data = (struct wnd_data*) g_object_get_data((GObject*)menu, "wnd");
-  long number = 0;
-  
-  gtk_container_remove((GtkContainer*)menu, close_btn);
-  gtk_container_remove((GtkContainer*)menu, switch_btn);
-  GList *children = gtk_container_get_children(menu);
-  
-  while (NULL != (children = g_list_next(children))) {
-    GtkWidget* widget = children->data;
-    
-    if (children->data == search) {
-      
-      break;
-    }
-    
-    ++number;
-  }
-  number  /= 2;
-  
-  gtk_notebook_remove_page(wnd_data->tab_container, number);
-  
-  children = gtk_container_get_children((GtkContainer*)menu);
-  
-  GtkWidget *wid = g_list_nth_data(children, 1);
-  
-  if (wid) {
-    
-    
-    aswitch_tab_btn( gtk_container_get_children(wid), user_data);
-    
-    int i = 1;
-    
-    for (; i < wnd_data->menu_items + 1; i+=2) {
-      
-      gtk_menu_attach((GtkMenu*) menu, g_list_nth_data(children, i), 0, 1 , i, i+1);
-      gtk_menu_attach((GtkMenu*) menu, g_list_nth_data(children, i+1), 2, 3, i, i+1 );
-    }
-    
-  }
-  else {
-    
-    real_new_tab( g_list_nth_data(children, 0), wnd_data);
-  }
-  
-  g_clear_list (&children, NULL);
 }
 
 static gboolean hide_button( GtkWidget *widget, GdkEventMotion *event ) {
@@ -721,6 +640,7 @@ gtk_overlay_set_overlay_pass_through(overlay, (GtkWidget*)fixed, TRUE);
   
   g_object_set_data(wv, "title_tab_container", tabLabel);
   g_object_set_data(wv, "v1_title_tab_container", switch_btn);
+  g_object_set_data(wv, "v1_menu_item", close_btn);
   g_object_set_data(wv, "url", url);
   g_signal_connect(closeBtn,"clicked", aclose_tab, wv);
   
@@ -1017,10 +937,70 @@ void init_v1_ui(struct wnd_data *wnd_data, GtkOverlay *overlay, GtkOverlay *root
   if (wnd_data->nav_type == oldschool) gtk_widget_hide(fixed);
 }
 
-static void real_close_tab(GtkMenu *menu, GtkWidget *menuItem, WebKitWebView *wv, struct wnd_data *wnd_data)
+static void real_close_tab(WebKitWebView *wv)
 {
-  aclose_tab(NUL, wv);
-  sclos(menuItem, wnd_data);
+  GtkWidget *p, *pp;
+  GtkWidget *menu;
+  struct wnd_data *wnd_data = g_object_get_data(gtk_widget_get_parent(g_object_get_data(wv, "v1_menu_item")), "wnd");
+  GtkWidget *menuItem = g_object_get_data(wv, "v1_menu_item");
+  GtkWidget *close_btn = menuItem;
+  GtkWidget *switch_btn = g_object_get_data((GObject*)close_btn, "switch_btn");
+  
+  
+  g_object_ref(close_btn);
+  
+  //gtk_widget_destroy((GtkWidget*)g_object_get_data((GObject*)switch_btn, "webContent"));
+  
+  //GtkOverlay *ov = gtk_widget_get_parent(gtk_widget_get_parent(wv));
+  GtkWidget *search;
+  
+  
+  menu = gtk_widget_get_parent(menuItem);
+  search = menuItem;
+  
+  gtk_container_remove((GtkContainer*)menu, close_btn);
+  gtk_container_remove((GtkContainer*)menu, switch_btn);
+  GList *children;
+  
+  children = gtk_container_get_children((GtkContainer*)menu);
+  
+  GtkWidget *wid = g_list_nth_data(children, 1);
+  
+  if (wid) {
+    
+    
+   // aswitch_tab_btn( gtk_container_get_children(wid), wv);
+    
+    int i = 1;
+    
+    for (; i < wnd_data->menu_items + 1; i+=2) {
+      
+      gtk_menu_attach((GtkMenu*) menu, g_list_nth_data(children, i), 0, 1 , i, i+1);
+      gtk_menu_attach((GtkMenu*) menu, g_list_nth_data(children, i+1), 2, 3, i, i+1 );
+    }
+    
+  }
+  else {
+    
+    real_new_tab( g_list_nth_data(children, 0), wnd_data);
+  }
+  
+  g_clear_list (&children, NULL);
+  
+  pp = (GtkWidget*)wv;
+  p = gtk_widget_get_parent(pp);
+  
+  while (p) {
+    
+    if (GTK_IS_NOTEBOOK(p)) {
+      
+      gtk_notebook_remove_page(p, gtk_notebook_page_num(p,pp) );
+      break;
+    }
+    
+    pp = p;
+    p = gtk_widget_get_parent(p);
+  }
 }
 
 int main(int argc, char **argv)
