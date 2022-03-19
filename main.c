@@ -341,13 +341,14 @@ static gboolean toolbox_leave(GtkWidget *wid, GdkEventCrossing *event)
 
 static void real_new_tab(GtkWidget *widget, struct wnd_data *wnd_data)
 {
+#define OVERLAY_OVER_OVERLAY
 GtkWidget  *info_btn;
 GtkWidget *mWindow, *button, *new_tab_btn, *back, *forward, *home;
 GtkBox *box;
 GtkBox *navigation_btns;
 GtkFixed *fixed;
 GtkOverlay *overlay;
-#if OVERLAY_OVER_OVERLAY
+#ifdef OVERLAY_OVER_OVERLAY
 GtkOverlay *root_overlay, *helper_overlay;
 #endif
 GtkEntry *url;
@@ -358,7 +359,7 @@ GValue value2 = G_VALUE_INIT;
 GtkEventBox *eb = gtk_event_box_new();
 
 overlay = (GtkOverlay*) gtk_overlay_new();
-#if OVERLAY_OVER_OVERLAY
+#ifdef OVERLAY_OVER_OVERLAY
 root_overlay = gtk_overlay_new();
 helper_overlay = gtk_overlay_new();
 #endif
@@ -450,7 +451,7 @@ gtk_widget_set_tooltip_text(back, "Right click to hide. Press right mouse button
 
 g_object_set_data((GObject*)box, "navigation_btns", navigation_btns);
 g_object_set_data((GObject*)box, "button", button);
-#if OVERLAY_OVER_OVERLAY
+#ifdef OVERLAY_OVER_OVERLAY
 g_object_set_data((GObject*)root_overlay, "button", button);
 g_object_set_data((GObject*)root_overlay, "navigation_btns", navigation_btns);
 #else
@@ -480,7 +481,7 @@ g_signal_connect(back, "button-release-event", event_event2, wnd_data );
 
 
 gtk_overlay_add_overlay(overlay, (GtkWidget*)fixed);
-#if OVERLAY_OVER_OVERLAY
+#ifdef OVERLAY_OVER_OVERLAY
 g_object_set_data((GObject*)root_overlay, "webview", wv);
 g_object_set_data((GObject*)root_overlay, "nav_btn", navigation_btns);
 g_object_set_data((GObject*)root_overlay, "box", box);
@@ -490,10 +491,6 @@ g_object_set_data((GObject*)overlay, "nav_btn", navigation_btns);
 g_object_set_data((GObject*)overlay, "box", box);
 #endif
 
-#if OVERLAY_OVER_OVERLAY
-gtk_overlay_set_overlay_pass_through(root_overlay, (GtkWidget*)overlay, TRUE);
-gtk_overlay_set_overlay_pass_through(root_overlay, (GtkWidget*)helper_overlay, TRUE);
-#endif
 gtk_overlay_set_overlay_pass_through(overlay, (GtkWidget*)fixed, TRUE);
 
 
@@ -521,7 +518,7 @@ gtk_overlay_set_overlay_pass_through(overlay, (GtkWidget*)fixed, TRUE);
     position = 1;
   }
   
-#if OVERLAY_OVER_OVERLAY
+#ifdef OVERLAY_OVER_OVERLAY
   gtk_overlay_add_overlay(root_overlay, overlay);
   gtk_overlay_add_overlay(root_overlay, helper_overlay);
   gtk_notebook_insert_page((GtkNotebook*)wnd_data->tab_container, (GtkWidget*)root_overlay, eb, position - 1);
@@ -529,6 +526,10 @@ gtk_overlay_set_overlay_pass_through(overlay, (GtkWidget*)fixed, TRUE);
   gtk_notebook_insert_page((GtkNotebook*)wnd_data->tab_container, (GtkWidget*)overlay, eb, position - 1);
 #endif
   
+  #ifdef OVERLAY_OVER_OVERLAY
+  gtk_overlay_set_overlay_pass_through(root_overlay, (GtkWidget*)overlay, TRUE);
+  gtk_overlay_set_overlay_pass_through(root_overlay, (GtkWidget*)helper_overlay, TRUE);
+  #endif
   
   g_object_set_data(wv, "title_tab_container", tabLabel);
   g_object_set_data(wv, "url", url);
@@ -544,7 +545,7 @@ gtk_overlay_set_overlay_pass_through(overlay, (GtkWidget*)fixed, TRUE);
   
   
   // Called init v1 gui and pass overlay to it
-#if OVERLAY_OVER_OVERLAY  
+#ifdef OVERLAY_OVER_OVERLAY  
   init_v1_ui(wnd_data, helper_overlay);
   
   gtk_widget_show_all((GtkWidget*)root_overlay);
