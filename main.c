@@ -49,6 +49,7 @@ struct wnd_data {
 };
 
 static void real_close_tab(WebKitWebView *wv);
+static void teleport_clicked(GtkWidget *widget, GdkEvent *event, gpointer user_data);
 
 static WebKitWebView *get_webview(GtkWidget *widget);
 
@@ -208,6 +209,7 @@ static void switch_tab(GtkNotebook* self, GtkWidget* page, guint page_num, gpoin
   struct wnd_data *m_wnd= (struct wnd_data *) user_data;
   GtkBox *box = g_object_get_data(page, "box");
   GtkFixed *box2 = g_object_get_data(page, "v1_box");
+  GtkButton *button = g_object_get_data(page, "v1_button");
   
   if (NULL == box) return;
   
@@ -226,6 +228,19 @@ static void switch_tab(GtkNotebook* self, GtkWidget* page, guint page_num, gpoin
     gtk_widget_show(box2);
     gtk_widget_show(box);
   }
+  
+  
+  if (m_wnd->float_ui_pos == top) {
+    
+    g_object_set_data(button, "position", "down");
+  }
+  else {
+    
+    g_object_set_data(button, "position", "up");
+    
+  }
+  
+    teleport_clicked(button, NULL, g_object_get_data(page, "v1_rbox"));
   
   real_window_resize(m_wnd->m_wnd, gtk_widget_get_allocated_width(m_wnd->m_wnd), gtk_widget_get_allocated_height(m_wnd->m_wnd), box);
 }
@@ -984,6 +999,8 @@ void init_v1_ui(struct wnd_data *wnd_data, GtkOverlay *overlay, GtkOverlay *root
   gtk_fixed_put((GtkFixed*)box, (GtkWidget*)url, 0, 0);
   gtk_fixed_put((GtkFixed*)box, button, 100, 300);
   
+
+  
   
   gtk_fixed_put((GtkFixed*)navigation_btns, forward, 0, 0);
   gtk_fixed_put((GtkFixed*)navigation_btns, home, 0, 20);
@@ -997,6 +1014,7 @@ void init_v1_ui(struct wnd_data *wnd_data, GtkOverlay *overlay, GtkOverlay *root
   g_object_set_data((GObject*)root_overlay, "v1_navigation_btns", navigation_btns);
   g_object_set_data((GObject*)root_overlay, "urlbar", url);
   g_object_set_data((GObject*)root_overlay, "v1_box", fixed);
+  g_object_set_data((GObject*)root_overlay, "v1_rbox", box);
   
   gtk_widget_set_size_request((GtkWidget*)box, 100, height);
   gtk_widget_set_size_request((GtkWidget*)url, 80, height);
@@ -1105,6 +1123,9 @@ int main(int argc, char **argv)
   wnd_data.menu_items = 1;
   
     wnd_data.nav_type = both;
+    
+    
+    wnd_data.float_ui_pos = top;
   //webkit_web_context_set_web_extensions_directory (webkit_web_context_get_default (), 
   //                                                 INSTALL_PREFIX "lib/extensions");
   download_manager_init();
