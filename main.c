@@ -32,10 +32,12 @@
 
 #include <sys/param.h>
 
+enum NAVIGATION_FLOAT_POS { top, bottom };
 enum NAVIGATION_UI_SELECTION { oldschool, floating, both };
 
 struct wnd_data {
 
+  enum NAVIGATION_FLOAT_POS float_ui_pos;
   enum NAVIGATION_UI_SELECTION nav_type;
   GtkWidget *main_tab;
   GtkWidget *v1_entry;
@@ -205,8 +207,25 @@ static void switch_tab(GtkNotebook* self, GtkWidget* page, guint page_num, gpoin
 {
   struct wnd_data *m_wnd= (struct wnd_data *) user_data;
   GtkBox *box = g_object_get_data(page, "box");
+  GtkFixed *box2 = g_object_get_data(page, "v1_box");
   
   if (NULL == box) return;
+  
+  if (m_wnd->nav_type == floating) {
+  
+    gtk_widget_hide(box);
+    gtk_widget_show(box2);
+  }
+  else if (m_wnd->nav_type == oldschool) {
+    
+    gtk_widget_hide(box2);
+    gtk_widget_show(box);
+  }
+  else if (m_wnd->nav_type == both) {
+  
+    gtk_widget_show(box2);
+    gtk_widget_show(box);
+  }
   
   real_window_resize(m_wnd->m_wnd, gtk_widget_get_allocated_width(m_wnd->m_wnd), gtk_widget_get_allocated_height(m_wnd->m_wnd), box);
 }
@@ -692,9 +711,9 @@ gboolean window_resize(GtkWidget* self, GdkEventConfigure *event, gpointer user_
   GtkWidget *page = gtk_notebook_get_nth_page(m_wnd->tab_container, gtk_notebook_get_current_page(m_wnd->tab_container));
   GtkBox *box = g_object_get_data(page, "box");
   
-  puts("WILL RESIZE?");
+
   if (NULL == box) return TRUE;
-  puts("WILL RESIZE");
+
   real_window_resize(self, event->width, event->height, box);
   return TRUE;
 }
@@ -730,19 +749,48 @@ static void real_window_resize(GtkWidget* self, int width, int height, gpointer 
 }
 
 
+static void set_vis_old_school(GtkToggleButton *togglebutton,struct wnd_data *data)
+{
+  data->nav_type = oldschool;
+}
+
+static void set_vis_float_top(GtkToggleButton *togglebutton,struct wnd_data *data)
+{
+  data->float_ui_pos = top;
+}
+
+static void set_vis_float_bottom(GtkToggleButton *togglebutton,struct wnd_data *data)
+{
+  data->float_ui_pos = bottom;
+}
+
+static void set_vis_both(GtkToggleButton *togglebutton,struct wnd_data *data)
+{
+  data->nav_type = both;
+}
+
+
+static void set_vis_float_only(GtkToggleButton *togglebutton,struct wnd_data *data)
+{
+  data->nav_type = floating;
+}
+
+
 void create_main_page(GtkNotebook *notebook, struct wnd_data *wnd)
 {
-  GtkBox *box, *box2;
+  GtkBox *box, *box2, *box3;
   GtkEntry *url;
   
   box = (GtkBox*)gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
   box2= (GtkBox*)gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+  box3= (GtkBox*)gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
   url = (GtkEntry*)gtk_entry_new();
   
   
   
   gtk_box_pack_start(box2, url, 1,1,0);
   gtk_box_pack_start(box, box2, 1,1,0);
+  gtk_box_pack_start(box, box3, 1,1,0);
   
   gtk_notebook_append_page(notebook, box, NULL);
   
@@ -754,7 +802,46 @@ void create_main_page(GtkNotebook *notebook, struct wnd_data *wnd)
   
   gtk_label_set_markup(license, "<b><i>License</i></b>\n<b>Copyright 2021</b> by Sławomir Lach s l a w e k @ l a c h . a r t . p l\nV2BlankBrowser is under <a href='https://www.gnu.org/licenses/gpl-3.0.html'>GNU/GPLv3</a>");
   
-  gtk_box_pack_start(box, license, 1, 1, 0);
+  GtkLabel *opt_flc_label = gtk_label_new("Show floating controls on (when activated)");
+  
+  
+  gtk_box_pack_start(box3, opt_flc_label, 1, 1, 0);
+  
+  GtkWidget *rad = gtk_radio_button_new_with_label(NULL, "on top");
+  
+  g_signal_connect(rad, "toggled", set_vis_float_top, wnd);
+  
+  gtk_box_pack_start(box3, rad, 1, 1, 0);
+  rad = gtk_radio_button_new_with_label_from_widget(rad, "on bottom");
+  
+  g_signal_connect(rad, "toggled", set_vis_float_bottom, wnd);
+  
+  gtk_box_pack_start(box3, rad, 1, 1, 0);
+  
+  GtkLabel *opt_ui_type_label = gtk_label_new("UI type (float/oldschool/both)");
+  
+  
+  gtk_box_pack_start(box3, opt_ui_type_label, 1, 1, 0);
+  
+  rad = gtk_radio_button_new_with_label(NULL, "Float only");
+  
+  g_signal_connect(rad, "toggled", set_vis_float_only, wnd);
+  
+  gtk_box_pack_start(box3, rad, 1, 1, 0);
+  rad = gtk_radio_button_new_with_label_from_widget(rad, "Oldschool only");
+  
+  g_signal_connect(rad, "toggled", set_vis_old_school, wnd);
+  
+  gtk_box_pack_start(box3, rad, 1, 1, 0);
+  
+  rad = gtk_radio_button_new_with_label_from_widget(rad, "Both");
+  
+  g_signal_connect(rad, "toggled", set_vis_both, wnd);
+  
+  gtk_box_pack_start(box3, rad, 1, 1, 0);
+  
+  
+  gtk_box_pack_start(box3, license, 1, 1, 0);
   
   gtk_widget_show_all(box);
 }
@@ -909,6 +996,7 @@ void init_v1_ui(struct wnd_data *wnd_data, GtkOverlay *overlay, GtkOverlay *root
   g_object_set_data((GObject*)root_overlay, "v1_button", button);
   g_object_set_data((GObject*)root_overlay, "v1_navigation_btns", navigation_btns);
   g_object_set_data((GObject*)root_overlay, "urlbar", url);
+  g_object_set_data((GObject*)root_overlay, "v1_box", fixed);
   
   gtk_widget_set_size_request((GtkWidget*)box, 100, height);
   gtk_widget_set_size_request((GtkWidget*)url, 80, height);
