@@ -42,6 +42,7 @@ struct wnd_data {
   GtkWidget *main_tab;
   GtkWidget *v1_entry;
   GtkBox *tab_container;
+  GtkWidget *hideTopBarCheck;
   GtkWindow *m_wnd;
   guint32 r_click_time;
   GtkWidget *tabs_menu;
@@ -211,7 +212,12 @@ static void switch_tab(GtkNotebook* self, GtkWidget* page, guint page_num, gpoin
   GtkFixed *box2 = g_object_get_data(page, "v1_box");
   GtkButton *button = g_object_get_data(page, "v1_button");
   
-  if (NULL == box) return;
+  if (NULL == box) {
+   
+    gtk_notebook_set_show_tabs(self, true);
+    
+    return;
+  }
   
   if (m_wnd->nav_type == floating) {
   
@@ -241,6 +247,10 @@ static void switch_tab(GtkNotebook* self, GtkWidget* page, guint page_num, gpoin
   }
   
     teleport_clicked(button, NULL, g_object_get_data(page, "v1_rbox"));
+    
+    
+    gtk_notebook_set_show_tabs(m_wnd->tab_container,(! gtk_toggle_button_get_active(m_wnd->hideTopBarCheck)) || (m_wnd->nav_type == oldschool)); 
+    ///displ_prop_topTabBar(m_wnd->hideTopBarCheck, m_wnd);
   
   real_window_resize(m_wnd->m_wnd, gtk_widget_get_allocated_width(m_wnd->m_wnd), gtk_widget_get_allocated_height(m_wnd->m_wnd), box);
 }
@@ -424,6 +434,15 @@ static gboolean hide_button( GtkWidget *widget, GdkEventMotion *event ) {
   gtk_widget_set_visible((GtkWidget*)button, FALSE); 
   
   return TRUE;
+}
+
+static void switch_to_main_page(GtkWidget *widget, GdkEvent *event, gpointer user_data)
+{
+  (void) event;
+  
+  struct wnd_data *wnd_data = (struct wnd_data*) user_data;
+  
+  gtk_notebook_set_current_page(wnd_data->tab_container, -1);
 }
 
 static void aswitch_tab_btn(GtkWidget *widget, gpointer user_data)
@@ -767,6 +786,10 @@ static void real_window_resize(GtkWidget* self, int width, int height, gpointer 
 static void set_vis_old_school(GtkToggleButton *togglebutton,struct wnd_data *data)
 {
   data->nav_type = oldschool;
+  
+  gtk_widget_set_sensitive(data->hideTopBarCheck, false);
+  
+  gtk_notebook_set_show_tabs(data->tab_container, true);
 }
 
 static void set_vis_float_top(GtkToggleButton *togglebutton,struct wnd_data *data)
@@ -782,14 +805,24 @@ static void set_vis_float_bottom(GtkToggleButton *togglebutton,struct wnd_data *
 static void set_vis_both(GtkToggleButton *togglebutton,struct wnd_data *data)
 {
   data->nav_type = both;
+  
+  gtk_widget_set_sensitive(data->hideTopBarCheck, true);
+  
 }
 
 
 static void set_vis_float_only(GtkToggleButton *togglebutton,struct wnd_data *data)
 {
   data->nav_type = floating;
+  
+  gtk_widget_set_sensitive(data->hideTopBarCheck, true);
 }
 
+
+void displ_prop_topTabBar(GtkWidget *widget, gpointer *data)
+{
+
+}
 
 void create_main_page(GtkNotebook *notebook, struct wnd_data *wnd)
 {
@@ -855,8 +888,15 @@ void create_main_page(GtkNotebook *notebook, struct wnd_data *wnd)
   
   gtk_box_pack_start(box3, rad, 1, 1, 0);
   
+  GtkWidget *checkbox= gtk_check_button_new_with_label("Hide top tabbar");
+  
+  gtk_box_pack_start(box3, checkbox, 1, 1, 0);
   
   gtk_box_pack_start(box3, license, 1, 1, 0);
+  
+  g_signal_connect(checkbox, "toggled", displ_prop_topTabBar, wnd);
+  
+  wnd->hideTopBarCheck = checkbox;
   
   gtk_widget_show_all(box);
 }
@@ -1135,12 +1175,15 @@ int main(int argc, char **argv)
   
    new_tab_btn2 = gtk_menu_item_new_with_label("+");
    
-   
+   GtkWidget *main_tab = gtk_menu_item_new_with_label("Main Tab");
+    g_signal_connect(main_tab, "button-press-event", G_CALLBACK(switch_to_main_page), &wnd_data);
+   gtk_menu_attach((GtkMenu*)wnd_data.tabs_menu , main_tab, 0, 1, 0, 1);
     g_signal_connect(new_tab_btn2, "button-press-event", G_CALLBACK(new_tab), &wnd_data);
-     gtk_menu_attach((GtkMenu*)wnd_data.tabs_menu , new_tab_btn2, 0, 3, 0, 1);
+     gtk_menu_attach((GtkMenu*)wnd_data.tabs_menu , new_tab_btn2, 2, 3, 0, 1);
   
      g_object_set_data((GObject*)wnd_data.tabs_menu , "wnd", &wnd_data);
      gtk_widget_show((GtkWidget*)new_tab_btn);
+     gtk_widget_show((GtkWidget*)main_tab);
      
   g_signal_connect(tabs, "switch-page", switch_tab, &wnd_data);
   
