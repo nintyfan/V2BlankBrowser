@@ -459,6 +459,7 @@ static void aswitch_tab_btn(GtkWidget *widget, gpointer user_data)
   search = widget;
   
   long number = 0;
+  long child_number = 0;
   
   
   GList *children = gtk_container_get_children(menu);
@@ -468,14 +469,15 @@ static void aswitch_tab_btn(GtkWidget *widget, gpointer user_data)
     
     if (children->data == search) {
       
-      break;
+      child_number = number + 1;
     }
     
     ++number;
   }
   number  /= 2;
+  child_number /= 2;
 
-  gtk_notebook_set_current_page(wnd_data->tab_container, number);
+  gtk_notebook_set_current_page(wnd_data->tab_container, number - child_number );
 
 }
 
@@ -681,9 +683,9 @@ gtk_overlay_set_overlay_pass_through(overlay, (GtkWidget*)fixed, TRUE);
 #ifdef OVERLAY_OVER_OVERLAY
   gtk_overlay_add_overlay(root_overlay, overlay);
   gtk_overlay_add_overlay(root_overlay, helper_overlay);
-  gtk_notebook_insert_page((GtkNotebook*)wnd_data->tab_container, (GtkWidget*)root_overlay, eb, position - 1);
+  gtk_notebook_insert_page((GtkNotebook*)wnd_data->tab_container, (GtkWidget*)root_overlay, eb, 0);
 #else
-  gtk_notebook_insert_page((GtkNotebook*)wnd_data->tab_container, (GtkWidget*)overlay, eb, position - 1);
+  gtk_notebook_insert_page((GtkNotebook*)wnd_data->tab_container, (GtkWidget*)overlay, eb, 0);
 #endif
   
   #ifdef OVERLAY_OVER_OVERLAY
@@ -1117,7 +1119,7 @@ static void real_close_tab(WebKitWebView *wv)
     
    // aswitch_tab_btn( gtk_container_get_children(wid), wv);
     
-    int i = 1;
+    int i = 2;
     
     for (; i < wnd_data->menu_items + 1; i+=2) {
       
