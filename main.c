@@ -703,6 +703,7 @@ gtk_overlay_set_overlay_pass_through(overlay, (GtkWidget*)fixed, TRUE);
     
     gtk_entry_set_text(url, gtk_entry_get_text(widget));
     
+    
     go_to_addr(url, NULL);
   }
   real_window_resize(wnd_data->m_wnd, gtk_widget_get_allocated_width(wnd_data->m_wnd), gtk_widget_get_allocated_height(wnd_data->m_wnd), box);
@@ -713,12 +714,18 @@ gtk_overlay_set_overlay_pass_through(overlay, (GtkWidget*)fixed, TRUE);
   gtk_widget_show_all((GtkWidget*)root_overlay);
   init_v1_ui(wnd_data, helper_overlay, root_overlay);
   
+  GtkEntry *floating_entry = g_object_get_data(root_overlay, "urlbar");
+  
+  if (NULL != floating_entry) {
+  
+    gtk_entry_set_text(floating_entry, gtk_entry_get_text(widget));
+  }
 #else
   
   
   gtk_widget_show_all((GtkWidget*)overlay);
   
-  init_v1_ui(wnd_data, overlay, NULL);
+  init_v1_ui(wnd_data, overlay, NULL);(
 #endif
   //gtk_overlay_reorder_overlay(overlay, wv, 0);
   //gtk_overlay_reorder_overlay(overlay, fixed, 1);
@@ -852,6 +859,8 @@ void create_main_page(GtkNotebook *notebook, struct wnd_data *wnd)
   
   gtk_label_set_markup(license, "<b><i>License</i></b>\n<b>Copyright 2021</b> by Sławomir Lach s l a w e k @ l a c h . a r t . p l\nV2BlankBrowser is under <a href='https://www.gnu.org/licenses/gpl-3.0.html'>GNU/GPLv3</a>");
   
+  GtkLabel *donate_lbl = gtk_label_new(NULL);
+  
   GtkLabel *opt_flc_label = gtk_label_new("Show floating controls on (when activated)");
   
   
@@ -895,6 +904,10 @@ void create_main_page(GtkNotebook *notebook, struct wnd_data *wnd)
   gtk_box_pack_start(box3, checkbox, 1, 1, 0);
   
   gtk_box_pack_start(box3, license, 1, 1, 0);
+  
+  gtk_label_set_markup(donate_lbl, "<a href='https://www.patreon.com/easylinux' title='Donate'>Donate Project</a>");
+  
+  gtk_box_pack_start(box3, donate_lbl, 1, 1, 0);
   
   g_signal_connect(checkbox, "toggled", displ_prop_topTabBar, wnd);
   
@@ -1009,7 +1022,7 @@ void init_v1_ui(struct wnd_data *wnd_data, GtkOverlay *overlay, GtkOverlay *root
   
   gtk_widget_add_events((GtkWidget*)url, GDK_POINTER_MOTION_MASK);
   
-  
+  g_signal_connect((GtkWidget*)url, "activate", go_to_addr, wnd_data);
   g_signal_connect(info_btn, "button-press-event", G_CALLBACK(goto_info_page), wnd_data);
  
   g_signal_connect(button, "button-press-event", G_CALLBACK(teleport_clicked), box);
