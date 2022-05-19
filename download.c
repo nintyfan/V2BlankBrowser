@@ -19,6 +19,7 @@
 
 #include <gtk/gtk.h>
 #include <webkit2/webkit2.h>
+#include <glib-2.0/glib.h>
 
 #include <stddef.h>
 
@@ -33,7 +34,7 @@ static gboolean download_starting(WebKitDownload *download,
   
   GtkWidget *download_localtionD = gtk_file_chooser_dialog_new ("Select destination directory",
                                                                 NULL,
-                                                                GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER,
+                                                                GTK_FILE_CHOOSER_ACTION_SAVE,
                                                                 "Select destination",
                                                                 GTK_RESPONSE_ACCEPT,
                                                                 "Cancel", GTK_RESPONSE_CANCEL, NULL);
@@ -62,15 +63,15 @@ static gboolean download_starting(WebKitDownload *download,
     return FALSE;
   }
   
-  int length = snprintf(NULL, 0, "%s", location) + 1;
+  int length = snprintf(NULL, 0, "file:///%s", location) + 1;
   buffer = malloc(length);
   
-  snprintf(buffer, length, "%s", location);
+  snprintf(buffer, length, "file:///%s", location);
   
   puts(buffer);
   
   webkit_download_set_destination(download, buffer);
-
+  
   free(buffer);
   
   return TRUE;

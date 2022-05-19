@@ -32,6 +32,8 @@
 
 #include <sys/param.h>
 
+#include "download.h"
+
 enum NAVIGATION_FLOAT_POS { top, bottom };
 enum NAVIGATION_UI_SELECTION { oldschool, floating, both };
 
@@ -485,14 +487,13 @@ static void aswitch_tab_btn(GtkWidget *widget, gpointer user_data)
 static void real_new_tab(GtkWidget *widget, struct wnd_data *wnd_data)
 {
 GtkWidget  *info_btn;
-GtkWidget *mWindow, *button, *new_tab_btn, *back, *forward, *home;
+GtkWidget *button, *back, *forward, *home;
 GtkBox *box;
 GtkBox *navigation_btns;
 GtkFixed *fixed;
 GtkOverlay *overlay;
 GtkOverlay *root_overlay, *helper_overlay;
 GtkEntry *url;
-GtkNotebook *tabs;
 GtkCssProvider *prov;
 GValue value = G_VALUE_INIT;
 GValue value2 = G_VALUE_INIT;
@@ -1157,6 +1158,7 @@ int main(int argc, char **argv)
   //webkit_web_context_set_web_extensions_directory (webkit_web_context_get_default (), 
   //                                                 INSTALL_PREFIX "lib/extensions");
 //  download_manager_init();
+    
   
     wnd_data.tabs_menu = gtk_menu_new();
   tabs = (GtkNotebook*)gtk_notebook_new();
@@ -1176,6 +1178,8 @@ int main(int argc, char **argv)
   g_signal_connect(tabs, "switch-page", (GCallback)switch_tab, &wnd_data);
   
   create_main_page(tabs, &wnd_data);
+  
+  download_manager_init();
   
   mWindow = gtk_window_new(GTK_WINDOW_TOPLEVEL);
   
