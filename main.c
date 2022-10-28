@@ -49,12 +49,13 @@ struct wnd_data {
   guint32 r_click_time;
   GtkWidget *tabs_menu;
   unsigned int menu_items;
+  bool tab_drag;
 };
 
 static void init_v1_ui(struct wnd_data *wnd_data, GtkOverlay *overlay, GtkOverlay *root_overlay);
 static void real_close_tab(WebKitWebView *wv);
 static void teleport_clicked(GtkWidget *widget, GdkEvent *event, gpointer user_data);
-
+gboolean allow_drag_tab(GtkWidget* self, GdkEventButton *event, gpointer user_data);
 static WebKitWebView *get_webview(GtkWidget *widget);
 
 static void real_window_resize(GtkWidget* self, int width, int height, gpointer user_data);
@@ -260,7 +261,103 @@ static void switch_tab(GtkNotebook* self, GtkWidget* page, guint page_num, gpoin
 
 gboolean show_widgets(GtkWidget* self, GdkEventButton *event, gpointer user_data)
 {
-  gtk_widget_set_visible(user_data, TRUE);
+  gtk_widget_set_visible(g_object_get_data(self, "urlbar"), TRUE);
+  
+  return FALSE;
+}
+
+
+gboolean allow_drag_tab(GtkWidget* self, GdkEventButton *event, gpointer user_data)
+{
+  struct wnd_data *wnd_data = (struct wnd_data*) user_data;
+ 
+  gint rx, ry;
+  
+  gtk_widget_translate_coordinates(gtk_widget_get_toplevel(self),self, (gint) event->x, (gint) event->y, &rx, &ry);
+  
+  if (1 == event->button && gtk_notebook_get_show_tabs(wnd_data->tab_container)
+    &&  gtk_widget_get_allocated_height(self) / 25 < ry
+  ) {
+  
+      wnd_data->tab_drag = true;
+      
+      return true;
+  }
+  else {
+  
+    return false;
+  }
+}
+
+
+gboolean mouse_btn_clicked_on_tab(GtkWidget* self, GdkEventButton *event, gpointer user_data)
+{
+  if (!allow_drag_tab(self, event, user_data)) {
+  
+    show_widgets(self, event, user_data);
+  }
+  
+  return FALSE;
+}
+
+gboolean mouse_btn_release_on_tab(GtkWidget* self, GdkEventButton *event, gpointer user_data)
+{
+  struct wnd_data *wnd_data = (struct wnd_data*) user_data;
+  
+  gint rx, ry;
+  
+  if (1 == event->button && wnd_data->tab_drag) {
+    
+    wnd_data->tab_drag = false;
+    
+    gtk_widget_translate_coordinates(gtk_widget_get_toplevel(self),self,  (gint)event->x, (gint)event->y, &rx, &ry);
+    
+    if (gtk_widget_get_allocated_height(self) / 25 > ry) {
+    
+      gtk_notebook_set_show_tabs(wnd_data->tab_container, false);
+    }
+  }
+  
+  return FALSE;
+}
+
+gboolean allow_drag_tab_wv(GtkWidget* self, GdkEventButton *event, gpointer user_data)
+{
+  struct wnd_data *wnd_data = (struct wnd_data*) user_data;
+  
+  gint rx, ry;
+  
+  gtk_widget_translate_coordinates(gtk_widget_get_toplevel(self),self, (gint) event->x, (gint) event->y, &rx, &ry);
+    
+  if (1 == event->button && !gtk_notebook_get_show_tabs(wnd_data->tab_container)
+  &&  10 > ry
+  ) {
+    
+    wnd_data->tab_drag = true;
+    
+  }
+  
+  return FALSE;
+}
+
+gboolean dissallow_drag_tab_wv(GtkWidget* self, GdkEventButton *event, gpointer user_data)
+{
+  struct wnd_data *wnd_data = (struct wnd_data*) user_data;
+  
+  gint rx, ry;
+  
+  if (1 == event->button && wnd_data->tab_drag) {
+    
+    wnd_data->tab_drag = false;
+    
+    gtk_widget_translate_coordinates(gtk_widget_get_toplevel(self),self,  (gint)event->x, (gint)event->y, &rx, &ry);
+    
+    // We use dot after number to do floating operation
+    if (gtk_widget_get_allocated_height(self) / 25. < ry) {
+      
+      gtk_notebook_set_show_tabs(wnd_data->tab_container, true);
+    }
+  }
   
   return FALSE;
 }
@@ -508,6 +605,9 @@ GtkWidget *switch_btn = gtk_menu_item_new_with_label("New Page");
 GtkWidget *tabs_menu = wnd_data->tabs_menu;
 WebKitWebView *wv =  (WebKitWebView *)create_tab("about:blank", wnd_data);
 
+g_signal_connect(wv, "button-press-event", (GCallback)allow_drag_tab_wv, wnd_data);
+g_signal_connect(wv, "button-release-event", (GCallback)dissallow_drag_tab_wv, wnd_data);
+
 
 gtk_menu_attach((GtkMenu*)wnd_data->tabs_menu, switch_btn, 0, 1, wnd_data->menu_items, wnd_data->menu_items + 1);
 gtk_menu_attach((GtkMenu*)wnd_data->tabs_menu, close_btn, 2, 3, wnd_data->menu_items, wnd_data->menu_items + 1);
@@ -657,7 +757,8 @@ gtk_overlay_set_overlay_pass_through(overlay, (GtkWidget*)fixed, TRUE);
   gtk_widget_show_all((GtkWidget*)tabBox);
   
   
-  g_signal_connect(eb, "button-press-event", (GCallback)show_widgets, fixed);
+  g_signal_connect(eb, "button-press-event", (GCallback)mouse_btn_clicked_on_tab, wnd_data);
+  g_signal_connect(eb, "button-release-event", (GCallback)mouse_btn_release_on_tab, wnd_data);
   
   gint position = gtk_notebook_page_num(wnd_data->tab_container, wnd_data->main_tab);
   
@@ -669,6 +770,8 @@ gtk_overlay_set_overlay_pass_through(overlay, (GtkWidget*)fixed, TRUE);
   gtk_overlay_add_overlay(root_overlay, (GtkWidget*)overlay);
   gtk_overlay_add_overlay(root_overlay, (GtkWidget*)helper_overlay);
   gtk_notebook_insert_page((GtkNotebook*)wnd_data->tab_container, (GtkWidget*)root_overlay, (GtkWidget*)eb, 0);
+  
+  g_object_set_data(eb, "urlbar", fixed);
 
   gtk_overlay_set_overlay_pass_through(root_overlay, (GtkWidget*)overlay, TRUE);
   gtk_overlay_set_overlay_pass_through(root_overlay, (GtkWidget*)helper_overlay, TRUE);
@@ -837,6 +940,9 @@ void create_main_page(GtkNotebook *notebook, struct wnd_data *wnd)
   
   GtkLabel *opt_flc_label = (GtkLabel*)gtk_label_new("Show floating controls on (when activated)");
   
+  GtkLabel *info_about_tab_hidding = gtk_label_new("You can hide tabs (if present) by left click on bottom\n of it and move mouse on top of it.\n Next step requires releasing left mouse button.\n To show tabs again (again, if odlschool UI enabled)\n, left click on top of page\n, move mouse to bottom\n and release mouse button");
+  
+  gtk_box_pack_start(box3, (GtkWidget*) info_about_tab_hidding, 1, 1, 0);
   
   gtk_box_pack_start(box3, (GtkWidget*)opt_flc_label, 1, 1, 0);
   
