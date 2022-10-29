@@ -52,6 +52,7 @@ struct wnd_data {
   bool tab_drag;
   bool management_mode;
   GtkHeaderBar *HB;
+  bool titlebar_a_vis;
 };
 
 static void init_v1_ui(struct wnd_data *wnd_data, GtkOverlay *overlay, GtkOverlay *root_overlay);
@@ -356,8 +357,16 @@ gboolean allow_drag_tab_wv(GtkWidget* self, GdkEventButton *event, gpointer user
       }
       
      
-      gtk_overlay_reorder_overlay(gtk_widget_get_parent(wnd_data->HB), wnd_data->HB, 100);
+      gtk_overlay_reorder_overlay(gtk_widget_get_parent(wnd_data->tab_container), wnd_data->HB, 100);
       gtk_widget_show_all(wnd_data->HB);
+      
+      gint w,h;
+      
+      gtk_window_get_size(wnd_data->m_wnd, &w, &h);
+      
+      gtk_widget_set_size_request(wnd_data->HB, w, h);
+      
+      wnd_data->management_mode = true;
       return TRUE;
     }
   }
@@ -561,13 +570,47 @@ static gboolean show_button( GtkWidget *widget, GdkEventMotion *event ) {
   return TRUE;
 }
 
+static void HB_close_btn_dialog_resp( GtkDialog* self,
+                                      gint response_id,
+                                      gpointer user_data
+)
+{
+  gtk_widget_destroy(self);
+}
+
 static void HB_close_fnc(GtkWidget *widget, gpointer user_data)
 {
   struct wnd_data *wnd_data = (struct wnd_data*) user_data;
   
-  gtk_overlay_reorder_overlay(gtk_widget_get_parent(wnd_data->HB), wnd_data->HB, 0);
+  gtk_overlay_reorder_overlay(gtk_widget_get_parent(wnd_data->tab_container), wnd_data->HB, 0);
   
+  if (wnd_data->titlebar_a_vis) {
+    
+  gint w,h;
+  
+  if (!wnd_data->management_mode) {
+  
+   GtkDialog *dialog = gtk_message_dialog_new (wnd_data->m_wnd,
+                             GTK_DIALOG_DESTROY_WITH_PARENT | GTK_DIALOG_MODAL,
+                            GTK_MESSAGE_INFO,
+                            GTK_BUTTONS_CLOSE,
+                            "To close titlebar, use switch in config page. After this, you may right click on page at least by 6 second. In this case, you open management mode.");
+   g_signal_connect (dialog, "response",
+                     G_CALLBACK (HB_close_btn_dialog_resp),
+                     NULL);
+   
+    gtk_widget_show_all(dialog);
+  }
+  
+  gtk_window_get_size(wnd_data->m_wnd, &w, &h);
+  
+  gtk_widget_set_size_request(wnd_data->HB, w, 20);
+  
+  } else {
   gtk_widget_hide(wnd_data->HB);
+  }
+  
+  wnd_data->management_mode = false;
 }
 
 static void sclose_tab(GtkWidget *widget, gpointer user_data)
@@ -933,6 +976,18 @@ static void set_vis_old_school(GtkToggleButton *togglebutton,struct wnd_data *da
   gtk_notebook_set_show_tabs(data->tab_container, true);
 }
 
+static void switch_titlebar_always_vis(GtkToggleButton 
+*togglebutton,struct wnd_data *data)
+{
+  data->titlebar_a_vis = true;
+}
+
+static void switch_titlebar_not_always_vis(GtkToggleButton 
+*togglebutton,struct wnd_data *data)
+{
+  data->titlebar_a_vis = false;
+}
+
 static void set_vis_float_top(GtkToggleButton *togglebutton,struct wnd_data *data)
 {
   data->float_ui_pos = top;
@@ -975,11 +1030,22 @@ void create_main_page(GtkNotebook *notebook, struct wnd_data *wnd)
   box3= (GtkBox*)gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
   url = (GtkEntry*)gtk_entry_new();
   
-  
-  
   gtk_box_pack_start(box2, (GtkWidget*)url, 1,1,0);
   gtk_box_pack_start(box, (GtkWidget*)box2, 1,1,0);
   gtk_box_pack_start(box, (GtkWidget*)box3, 1,1,0);
+  
+  if (wnd->HB) {
+    GtkLabel *hb_lbl = gtk_label_new("Always show headerbar\n (you can switch to management mode\n, where you can use full area\n of window as titlebar, by right clicking\n on page by more than 6 seconds"); 
+    
+    gtk_box_pack_start(box3, hb_lbl, 0, 0, 0);
+    GtkRadioButton *rad= (GtkRadioButton*) gtk_radio_button_new_with_label(NULL, "Yes");
+    gtk_box_pack_start(box3, rad, 0, 0, 0);
+    g_signal_connect(rad, "toggled", switch_titlebar_always_vis, wnd);
+    rad = (GtkRadioButton*)
+    gtk_radio_button_new_with_label_from_widget(rad, "No");
+    g_signal_connect(rad, "toggled", switch_titlebar_not_always_vis, wnd);
+    gtk_box_pack_start(box3, rad, 0, 0, 0);
+  }
   
   gtk_notebook_append_page(notebook, (GtkWidget*)box, NULL);
   
@@ -1000,6 +1066,8 @@ void create_main_page(GtkNotebook *notebook, struct wnd_data *wnd)
   gtk_box_pack_start(box3, (GtkWidget*) info_about_tab_hidding, 1, 1, 0);
   
   gtk_box_pack_start(box3, (GtkWidget*)opt_flc_label, 1, 1, 0);
+  
+  
   
   GtkRadioButton *rad = (GtkRadioButton*) gtk_radio_button_new_with_label(NULL, "on top");
   
@@ -1324,6 +1392,7 @@ int main(int argc, char **argv)
   }
   
   wnd_data.menu_items = 1;
+  wnd_data.titlebar_a_vis = true;
   
     wnd_data.nav_type = both;
     
@@ -1393,11 +1462,11 @@ int main(int argc, char **argv)
   gtk_box_pack_start(HB_Box1, HB_close, 0, 0, 0);
   gtk_header_bar_pack_start(HB, HB_Box1);
   
-  //gtk_box_pack_start(HB_container1, HB_container, 0, 0, 0);
+  gtk_box_pack_start(HB_container1, HB_container, 0, 0, 0);
   g_signal_connect(HB_close, "clicked", HB_close_fnc, &wnd_data);
-  //gtk_fixed_put(HB_container1, HB_container, 0, 0);
+  gtk_fixed_put(HB_container1, HB_container, 0, 0);
   gtk_widget_set_size_request(HB, 100, 20);
-  gtk_overlay_add_overlay(m_overlay, HB);
+  gtk_overlay_add_overlay(m_overlay, HB_container1);
   gtk_window_set_titlebar(mWindow, HB);
   wnd_data.HB = HB;
   }
@@ -1410,10 +1479,5 @@ int main(int argc, char **argv)
 
   
   gtk_widget_show_all((GtkWidget*)mWindow);
-  if (wnd_data.HB) {
-  
-    gtk_widget_hide(wnd_data.HB);
-  }
-  
   gtk_main();
 }
