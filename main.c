@@ -54,6 +54,7 @@ struct wnd_data {
   GtkHeaderBar  *tHB;
   bool titlebar_a_vis;
    GtkOverlay *HB_Overlay;
+  GtkWidget *title_wid;
 };
 
 static void init_v1_ui(struct wnd_data *wnd_data, GtkOverlay *overlay, GtkOverlay *root_overlay);
@@ -370,6 +371,9 @@ gboolean allow_drag_tab_wv(GtkWidget* self, GdkEventButton *event, gpointer user
       gtk_widget_set_size_request(wnd_data->HB_Overlay, w, h);
      // gtk_header_bar_pack_start(wnd_data->tHB, wnd_data->tab_container);
        g_object_unref(wnd_data->tab_container);
+
+       wnd_data->title_wid = gtk_label_new(NULL);
+       gtk_header_bar_set_custom_title(wnd_data->tHB, wnd_data->title_wid);
       
       return TRUE;
     }
@@ -608,6 +612,10 @@ static void HB_close_fnc(GtkWidget *widget, gpointer user_data)
   
   
   } 
+  else {
+
+    gtk_widget_hide(wnd_data->tHB);
+  }
   g_object_ref(wnd_data->tab_container);
   
   gtk_container_remove(gtk_widget_get_parent(wnd_data->tab_container), wnd_data->tab_container);
@@ -616,6 +624,7 @@ static void HB_close_fnc(GtkWidget *widget, gpointer user_data)
   /* FIXME: Hack. We should reset/delete size request */
   gtk_widget_set_size_request(wnd_data->HB_Overlay, 25, 20);
   g_object_unref(wnd_data->tab_container);
+  gtk_header_bar_set_custom_title(wnd_data->tHB, NULL);
   wnd_data->management_mode = false;
 }
 
