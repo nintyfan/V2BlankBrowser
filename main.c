@@ -360,8 +360,15 @@ gboolean allow_drag_tab_wv(GtkWidget* self, GdkEventButton *event, gpointer user
     
       g_object_ref(wnd_data->tab_container);
       gtk_container_remove(g_list_nth_data(gtk_container_get_children(wnd_data->m_wnd), 0), wnd_data->tab_container);
-      gtk_header_bar_pack_start(wnd_data->tHB, wnd_data->tab_container);
+      gtk_overlay_add_overlay(wnd_data->HB_Overlay, wnd_data->tab_container);
+      gtk_overlay_reorder_overlay(wnd_data->HB_Overlay, wnd_data->tab_container, 0);
       
+      gint w,h;
+      gtk_window_get_size(wnd_data->m_wnd, &w, &h);
+      //w+=gtk_widget_get_allocated_width(wnd_data->tHB);
+      h+=gtk_widget_get_allocated_height(wnd_data->tHB);
+      gtk_widget_set_size_request(wnd_data->HB_Overlay, w, h);
+     // gtk_header_bar_pack_start(wnd_data->tHB, wnd_data->tab_container);
        g_object_unref(wnd_data->tab_container);
       
       return TRUE;
@@ -606,7 +613,8 @@ static void HB_close_fnc(GtkWidget *widget, gpointer user_data)
   gtk_container_remove(gtk_widget_get_parent(wnd_data->tab_container), wnd_data->tab_container);
   
   gtk_overlay_add_overlay(g_list_nth_data(gtk_container_get_children(wnd_data->m_wnd), 0), wnd_data->tab_container);
-  
+  /* FIXME: Hack. We should reset/delete size request */
+  gtk_widget_set_size_request(wnd_data->HB_Overlay, 25, 20);
   g_object_unref(wnd_data->tab_container);
   wnd_data->management_mode = false;
 }
@@ -1452,23 +1460,33 @@ int main(int argc, char **argv)
   GtkOverlay *m_overlay = (GtkOverlay*) gtk_overlay_new();
   wnd_data.tHB = NULL;
   if (use_headerbar) {
+  GtkBox *OverlayBox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL,0);
   GtkOverlay *HB_Overlay = gtk_overlay_new();
   GtkBox *HB_BOX = gtk_box_new(GTK_ORIENTATION_VERTICAL,0);
-  GtkBox *HB_container = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);  
+  GtkFixed *HB_container = gtk_fixed_new();
   GtkHeaderBar *HB = gtk_header_bar_new();
   
   gtk_window_set_titlebar(mWindow, HB);
   wnd_data.tHB = HB;
   wnd_data.HB_Overlay = HB_Overlay;
   GtkButton *HB_close = gtk_button_new_with_label("X");
-  gtk_box_pack_start(HB_container, HB_close, 0, 0, 0);
+  gtk_fixed_put(HB_container, HB_close, 0, 0);
   
   gtk_overlay_add_overlay(HB_Overlay, HB_container);
-  //gtk_box_pack_start(HB_BOX, HB, 0, 1, 0);
-  //gtk_overlay_add_overlay(m_overlay, HB_BOX);
-  g_signal_connect(HB_close, "clicked", HB_close_fnc, &wnd_data);
-  gtk_header_bar_pack_start(HB, HB_Overlay);
+  gtk_overlay_reorder_overlay(HB_Overlay, HB_container, 1);
   
+  gtk_box_pack_start(OverlayBox, HB_Overlay, 1, 1, 0);
+  g_signal_connect(HB_close, "clicked", HB_close_fnc, &wnd_data);
+  gtk_header_bar_pack_start(HB, OverlayBox);
+
+  gint w,nw, h;
+  h = gtk_widget_get_allocated_height(wnd_data.tHB);
+  /* FIXME: Hack - prefered size do not work? */
+  w = 25;
+  gtk_widget_set_size_request(HB_Overlay, w, h);
+  gtk_widget_set_size_request(HB_container, w, h);
+  
+  gtk_overlay_set_overlay_pass_through(HB_Overlay, HB_container, true);
   }
   
   gtk_overlay_add_overlay(m_overlay, tabs);
