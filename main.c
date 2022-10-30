@@ -51,7 +51,7 @@ struct wnd_data {
   unsigned int menu_items;
   bool tab_drag;
   bool management_mode;
-  GtkHeaderBar *HB;
+  GtkHeaderBar *HB, *tHB;
   bool titlebar_a_vis;
    GtkOverlay *HB_Overlay;
 };
@@ -366,8 +366,6 @@ gboolean allow_drag_tab_wv(GtkWidget* self, GdkEventButton *event, gpointer user
       //gtk_header_bar_set_custom_title(wnd_data->HB, NULL);
       
      // gtk_widget_set_size_request(wnd_data->tab_container, 1000, 1000);
-      gtk_widget_queue_draw(wnd_data->HB);
-      gtk_widget_queue_draw(wnd_data->tab_container);
       
       
       gint w,h;
@@ -375,6 +373,15 @@ gboolean allow_drag_tab_wv(GtkWidget* self, GdkEventButton *event, gpointer user
       gtk_window_get_size(wnd_data->m_wnd, &w, &h);
       
       gtk_widget_set_size_request(wnd_data->HB, w, h);
+      
+      gtk_widget_show_all(wnd_data->HB);
+      
+      gtk_overlay_reorder_overlay(g_list_nth_data(gtk_container_get_children(wnd_data->m_wnd), 0), wnd_data->HB, -100);
+      gtk_overlay_reorder_overlay(g_list_nth_data(gtk_container_get_children(wnd_data->m_wnd), 0), wnd_data->tab_container, 100);
+      
+      
+      gtk_widget_hide(wnd_data->tHB);
+    //  gtk_window_set_titlebar(wnd_data->m_wnd, wnd_data->HB);
       
       wnd_data->management_mode = true;
       return TRUE;
@@ -1464,19 +1471,32 @@ int main(int argc, char **argv)
   GtkOverlay *m_overlay = (GtkOverlay*) gtk_overlay_new();
   wnd_data.HB = NULL;
   if (use_headerbar) {
-  GtkBox *sb = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+  //GtkHeaderBar *RHB = 
   GtkBox *HB_container = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);  
   GtkHeaderBar *HB = gtk_header_bar_new();
-  GtkButton *HB_close = gtk_button_new_with_label("X");
-  GtkBox *HB_Box1 = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-  gtk_box_pack_start(HB_Box1, HB_close, 0, 0, 0);
-  gtk_box_pack_start(sb, HB_Box1, 0, 0, 0);
-  gtk_header_bar_pack_start(HB, sb);
   
-  g_signal_connect(HB_close, "clicked", HB_close_fnc, &wnd_data);
   gtk_window_set_titlebar(mWindow, HB);
+  
+  wnd_data.tHB = HB;
+  HB = gtk_header_bar_new();
+  
+  GtkButton *HB_close = gtk_button_new_with_label("X");
+  gtk_box_pack_start(HB_container, HB_close, 0, 0, 0);
+  //gtk_header_bar_pack_start(HB, HB_c);
+  
+  gtk_overlay_add_overlay(m_overlay, HB);
+  g_signal_connect(HB_close, "clicked", HB_close_fnc, &wnd_data);
+  //gtk_window_set_titlebar(mWindow, HB);
+  
+  GtkCssProvider *prov = gtk_css_provider_new();
+  gtk_css_provider_load_from_data(prov, "* { background-color: rgba(0,0,0,0); }", -1, NULL);
+  gtk_style_context_add_provider(gtk_widget_get_style_context((GtkWidget*)HB), (GtkStyleProvider*) prov, GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+  
+  
   wnd_data.HB = HB;
-  wnd_data.HB_Overlay = sb;
+  
+  
+  //wnd_data.HB_Overlay = sb;
   }
   
   gtk_overlay_add_overlay(m_overlay, tabs);
@@ -1487,5 +1507,10 @@ int main(int argc, char **argv)
 
   
   gtk_widget_show_all((GtkWidget*)mWindow);
+  
+  if (use_headerbar) {
+  
+    gtk_widget_hide(wnd_data.HB);
+  }
   gtk_main();
 }
