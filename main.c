@@ -53,6 +53,7 @@ struct wnd_data {
   bool management_mode;
   GtkHeaderBar *HB;
   bool titlebar_a_vis;
+   GtkOverlay *HB_Overlay;
 };
 
 static void init_v1_ui(struct wnd_data *wnd_data, GtkOverlay *overlay, GtkOverlay *root_overlay);
@@ -357,8 +358,17 @@ gboolean allow_drag_tab_wv(GtkWidget* self, GdkEventButton *event, gpointer user
       }
       
      
-      gtk_overlay_reorder_overlay(gtk_widget_get_parent(wnd_data->tab_container), wnd_data->HB, 100);
+    // gtk_header_bar_pack_start(wnd_data->HB, wnd_data->tab_container);
+      //gtk_widget_reparent(wnd_data->tab_container, wnd_data->HB_Overlay);
+     // gtk_overlay_add_overlay(wnd_data->HB_Overlay, wnd_data->tab_container);
       gtk_widget_show_all(wnd_data->HB);
+      
+      //gtk_header_bar_set_custom_title(wnd_data->HB, NULL);
+      
+     // gtk_widget_set_size_request(wnd_data->tab_container, 1000, 1000);
+      gtk_widget_queue_draw(wnd_data->HB);
+      gtk_widget_queue_draw(wnd_data->tab_container);
+      
       
       gint w,h;
       
@@ -1454,21 +1464,19 @@ int main(int argc, char **argv)
   GtkOverlay *m_overlay = (GtkOverlay*) gtk_overlay_new();
   wnd_data.HB = NULL;
   if (use_headerbar) {
+  GtkBox *sb = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
   GtkBox *HB_container = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);  
-  GtkFixed *HB_container1 = gtk_fixed_new();
   GtkHeaderBar *HB = gtk_header_bar_new();
   GtkButton *HB_close = gtk_button_new_with_label("X");
   GtkBox *HB_Box1 = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
   gtk_box_pack_start(HB_Box1, HB_close, 0, 0, 0);
-  gtk_header_bar_pack_start(HB, HB_Box1);
+  gtk_box_pack_start(sb, HB_Box1, 0, 0, 0);
+  gtk_header_bar_pack_start(HB, sb);
   
-  gtk_box_pack_start(HB_container1, HB_container, 0, 0, 0);
   g_signal_connect(HB_close, "clicked", HB_close_fnc, &wnd_data);
-  gtk_fixed_put(HB_container1, HB_container, 0, 0);
-  gtk_widget_set_size_request(HB, 100, 20);
-  gtk_overlay_add_overlay(m_overlay, HB_container1);
   gtk_window_set_titlebar(mWindow, HB);
   wnd_data.HB = HB;
+  wnd_data.HB_Overlay = sb;
   }
   
   gtk_overlay_add_overlay(m_overlay, tabs);
