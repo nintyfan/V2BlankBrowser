@@ -56,6 +56,7 @@ struct wnd_data {
    GtkOverlay *HB_Overlay;
   GtkWidget *title_wid;
   enum SHOW_HEADERBAR SHOW_HEADERBAR;
+  GtkToggleButton *redirect_self;
 };
 
 static void init_v1_ui(struct wnd_data *wnd_data, GtkOverlay *overlay, GtkOverlay *root_overlay);
@@ -376,6 +377,8 @@ gboolean allow_drag_tab_wv(GtkWidget* self, GdkEventButton *event, gpointer user
        wnd_data->title_wid = gtk_label_new(NULL);
        gtk_header_bar_set_custom_title(wnd_data->tHB, wnd_data->title_wid);
       
+       gtk_widget_show_all(wnd_data->redirect_self);
+       
        if (InManagementAndNonManagement == wnd_data->SHOW_HEADERBAR) {
          gint h = gtk_widget_get_allocated_height(wnd_data->tHB);
          gint w = gtk_widget_get_allocated_width(wnd_data->tHB);
@@ -992,7 +995,31 @@ static void real_window_resize(GtkWidget* self, int width, int height, gpointer 
   gtk_fixed_move((GtkFixed*)gtk_widget_get_parent((GtkWidget*)entry), (GtkWidget*)entry, cAllocation.x, 0);
   gtk_widget_set_size_request((GtkWidget*)entry, mwidth, cAllocation.height);
 }
-
+void ommit_mouse_events_btn(GtkToggleButton* self, gpointer user_data)
+{
+  struct wnd_data *wnd_data = (struct wnd_data*) user_data;
+  bool toggled = gtk_toggle_button_get_active(self);
+  
+  if (NULL == wnd_data->tab_container) {
+  
+    return;
+  }
+  
+  GtkWidget *wid = gtk_notebook_get_nth_page(wnd_data->tab_container, gtk_notebook_get_current_page(wnd_data->tab_container));
+  
+  gtk_widget_realize(wid);
+  gtk_widget_realize(wnd_data->tab_container);
+  
+  if (toggled) {
+    gtk_widget_set_events(wnd_data->tab_container, (gtk_widget_get_events(wnd_data->tab_container) | GDK_BUTTON_PRESS_MASK | GDK_POINTER_MOTION_MASK ));
+    gtk_widget_set_events(wid, (gtk_widget_get_events(wnd_data->tab_container) | GDK_BUTTON_PRESS_MASK | GDK_POINTER_MOTION_MASK ));
+    
+  }
+  else {
+    gtk_widget_set_events(wnd_data->tab_container, (gtk_widget_get_events(wnd_data->tab_container) & (~(GDK_BUTTON_PRESS_MASK  | GDK_POINTER_MOTION_MASK ))));
+    gtk_widget_set_events(wid, (gtk_widget_get_events(wnd_data->tab_container) & (~(GDK_BUTTON_PRESS_MASK  | GDK_POINTER_MOTION_MASK ))));
+  }
+}
 
 static void set_vis_old_school(GtkToggleButton *togglebutton,struct wnd_data *data)
 {
@@ -1501,7 +1528,13 @@ int main(int argc, char **argv)
   wnd_data.tHB = HB;
   wnd_data.HB_Overlay = HB_Overlay;
   GtkButton *HB_close = gtk_button_new_with_label("X");
+  GtkToggleButton *HB_redirect_self = gtk_toggle_button_new_with_label("Interact");
   gtk_fixed_put(HB_container, HB_close, 0, 0);
+  gtk_fixed_put(HB_container, HB_redirect_self, 50, 0);
+  
+  wnd_data.redirect_self = HB_redirect_self;
+  
+  g_signal_connect(HB_redirect_self, "toggled", ommit_mouse_events_btn, &wnd_data);
   
   gtk_overlay_add_overlay(HB_Overlay, HB_container);
   gtk_overlay_reorder_overlay(HB_Overlay, HB_container, 1);
@@ -1513,7 +1546,7 @@ int main(int argc, char **argv)
   gint w,nw, h;
   h = gtk_widget_get_allocated_height(wnd_data.tHB);
   /* FIXME: Hack - prefered size do not work? */
-  w = 25;
+  w = 200;
   gtk_widget_set_size_request(HB_Overlay, w, h);
   gtk_widget_set_size_request(HB_container, w, h);
   
@@ -1559,6 +1592,10 @@ int main(int argc, char **argv)
 
   gtk_widget_show_all((GtkWidget*)mWindow);
   gtk_widget_hide(placeholder);
+  if (wnd_data.redirect_self) {
+  
+      gtk_widget_hide(wnd_data.redirect_self);
+  }
   
   gtk_main();
 }
