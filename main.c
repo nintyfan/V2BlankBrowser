@@ -1524,6 +1524,11 @@ int main(int argc, char **argv)
   GtkButton *placeholder = gtk_button_new();;
   
   
+  GtkCssProvider *prov1 = gtk_css_provider_new();
+
+  gtk_css_provider_load_from_data(prov1, "* { background: rgba(0,0,0,0); border: none; }", -1, NULL);
+  gtk_style_context_add_provider(gtk_widget_get_style_context(placeholder), prov1, GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+
   gtk_box_pack_start(tabsBox, placeholder, 0, 1, 0);
   gtk_box_pack_start(tabsBox, tabs, 1, 1, 0);
   gtk_overlay_add_overlay(m_overlay, tabsBox);
