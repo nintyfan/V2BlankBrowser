@@ -333,7 +333,7 @@ gboolean allow_drag_tab_wv(GtkWidget* self, GdkEventButton *event, gpointer user
   
   gint rx, ry;
   
-  if (NULL != wnd_data->tHB && 0 == wnd_data->r_click_time && 3 == event->button) {
+  if (false == wnd_data->management_mode && NULL != wnd_data->tHB && 0 == wnd_data->r_click_time && 3 == event->button) {
   
     wnd_data->r_click_time = time(NULL);
     
