@@ -339,9 +339,9 @@ gboolean allow_drag_tab_wv(GtkWidget* self, GdkEventButton *event, gpointer user
     wnd_data->r_click_time = time(NULL);
     
     gtk_main();
-    printf("%ld\n", wnd_data->r_click_time);
+    printf("SHOULD SHOWN PUPUP?%ld\n", wnd_data->r_click_time);
     if (wnd_data->r_click_time > 5) {
-      
+       wnd_data->r_click_time = 0;
     if (false == wnd_data->management_mode) {
       GtkWidget *p = self;
       
@@ -355,7 +355,7 @@ gboolean allow_drag_tab_wv(GtkWidget* self, GdkEventButton *event, gpointer user
       }
       
       
-      wnd_data->r_click_time = 0;
+     
       if (!p) {
         
         return FALSE;
@@ -392,7 +392,6 @@ gboolean allow_drag_tab_wv(GtkWidget* self, GdkEventButton *event, gpointer user
       
       g_signal_emit_by_name(wnd_data->tHB, "popup-menu", NULL);
     }
-    wnd_data->r_click_time= 0;
       return TRUE;
     }
   }
@@ -637,7 +636,7 @@ static void HB_close_fnc(GtkWidget *widget, gpointer user_data)
   }
   g_object_ref( gtk_widget_get_parent(wnd_data->tab_container));
   
-  gtk_container_remove(gtk_widget_get_parent((wnd_data->tab_container),wnd_data->tab_container);
+  gtk_container_remove(gtk_widget_get_parent(gtk_widget_get_parent(wnd_data->tab_container)),gtk_widget_get_parent(wnd_data->tab_container));
   
   gtk_overlay_add_overlay(g_list_nth_data(gtk_container_get_children(wnd_data->m_wnd), 0), gtk_widget_get_parent(wnd_data->tab_container));
   /* FIXME: Hack. We should reset/delete size request */
