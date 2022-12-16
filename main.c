@@ -334,7 +334,7 @@ gboolean allow_drag_tab_wv(GtkWidget* self, GdkEventButton *event, gpointer user
   
   gint rx, ry;
   
-  if (false == wnd_data->management_mode && NULL != wnd_data->tHB && 0 == wnd_data->r_click_time && 3 == event->button) {
+  if ( NULL != wnd_data->tHB && 0 == wnd_data->r_click_time && 3 == event->button) {
   
     wnd_data->r_click_time = time(NULL);
     
@@ -342,6 +342,7 @@ gboolean allow_drag_tab_wv(GtkWidget* self, GdkEventButton *event, gpointer user
     printf("%ld\n", wnd_data->r_click_time);
     if (wnd_data->r_click_time > 5) {
       
+    if (false == wnd_data->management_mode) {
       GtkWidget *p = self;
       
       while (p) {
@@ -361,10 +362,10 @@ gboolean allow_drag_tab_wv(GtkWidget* self, GdkEventButton *event, gpointer user
       }
       
     
-      g_object_ref( gtk_widget_get_parent(gtk_widget_get_parent(wnd_data->tab_container)));
-      gtk_container_remove(g_list_nth_data(gtk_container_get_children(wnd_data->m_wnd), 0), gtk_widget_get_parent(gtk_widget_get_parent(wnd_data->tab_container)));
-      gtk_overlay_add_overlay(wnd_data->HB_Overlay, gtk_widget_get_parent(gtk_widget_get_parent(wnd_data->tab_container)));
-      gtk_overlay_reorder_overlay(wnd_data->HB_Overlay, gtk_widget_get_parent(gtk_widget_get_parent(wnd_data->tab_container)), 0);
+      g_object_ref( gtk_widget_get_parent(wnd_data->tab_container));
+      gtk_container_remove(g_list_nth_data(gtk_container_get_children(wnd_data->m_wnd), 0), gtk_widget_get_parent(wnd_data->tab_container));
+      gtk_overlay_add_overlay(wnd_data->HB_Overlay, gtk_widget_get_parent(wnd_data->tab_container));
+      gtk_overlay_reorder_overlay(wnd_data->HB_Overlay, gtk_widget_get_parent(wnd_data->tab_container), 0);
       
       gint w,h;
       gtk_window_get_size(wnd_data->m_wnd, &w, &h);
@@ -372,7 +373,7 @@ gboolean allow_drag_tab_wv(GtkWidget* self, GdkEventButton *event, gpointer user
       h+=gtk_widget_get_allocated_height(wnd_data->tHB);
       gtk_widget_set_size_request(wnd_data->HB_Overlay, w, h);
      // gtk_header_bar_pack_start(wnd_data->tHB, wnd_data->tab_container);
-       g_object_unref( gtk_widget_get_parent(gtk_widget_get_parent(wnd_data->tab_container)));
+       g_object_unref( gtk_widget_get_parent(wnd_data->tab_container));
 
        wnd_data->title_wid = gtk_label_new(NULL);
        gtk_header_bar_set_custom_title(wnd_data->tHB, wnd_data->title_wid);
@@ -382,10 +383,16 @@ gboolean allow_drag_tab_wv(GtkWidget* self, GdkEventButton *event, gpointer user
        if (InManagementAndNonManagement == wnd_data->SHOW_HEADERBAR) {
          gint h = gtk_widget_get_allocated_height(wnd_data->tHB);
          gint w = gtk_widget_get_allocated_width(wnd_data->tHB);
-         gtk_widget_show_all(g_list_nth_data(gtk_container_get_children( gtk_widget_get_parent(gtk_widget_get_parent(wnd_data->tab_container))), 0));
+         gtk_widget_show_all(g_list_nth_data(gtk_container_get_children( gtk_widget_get_parent(wnd_data->tab_container)), 0));
        
-         gtk_widget_set_size_request(g_list_nth_data(gtk_container_get_children( gtk_widget_get_parent(gtk_widget_get_parent(wnd_data->tab_container))), 0), w, h);
+         gtk_widget_set_size_request(g_list_nth_data(gtk_container_get_children( gtk_widget_get_parent(wnd_data->tab_container)), 0), w, h);
       }
+    }
+    else {
+      
+      g_signal_emit_by_name(wnd_data->tHB, "popup-menu", NULL);
+    }
+    wnd_data->r_click_time= 0;
       return TRUE;
     }
   }
@@ -628,17 +635,17 @@ static void HB_close_fnc(GtkWidget *widget, gpointer user_data)
 
     gtk_widget_hide(wnd_data->tHB);
   }
-  g_object_ref( gtk_widget_get_parent(gtk_widget_get_parent(wnd_data->tab_container)));
+  g_object_ref( gtk_widget_get_parent(wnd_data->tab_container));
   
-  gtk_container_remove(gtk_widget_get_parent(gtk_widget_get_parent(gtk_widget_get_parent(wnd_data->tab_container))), gtk_widget_get_parent(gtk_widget_get_parent(wnd_data->tab_container)));
+  gtk_container_remove(gtk_widget_get_parent((wnd_data->tab_container),wnd_data->tab_container);
   
-  gtk_overlay_add_overlay(g_list_nth_data(gtk_container_get_children(wnd_data->m_wnd), 0), gtk_widget_get_parent(gtk_widget_get_parent(wnd_data->tab_container)));
+  gtk_overlay_add_overlay(g_list_nth_data(gtk_container_get_children(wnd_data->m_wnd), 0), gtk_widget_get_parent(wnd_data->tab_container));
   /* FIXME: Hack. We should reset/delete size request */
   gtk_widget_set_size_request(wnd_data->HB_Overlay, 25, 20);
-  g_object_unref( gtk_widget_get_parent(gtk_widget_get_parent(wnd_data->tab_container)));
+  g_object_unref( gtk_widget_get_parent(wnd_data->tab_container));
   gtk_header_bar_set_custom_title(wnd_data->tHB, NULL);
   
-  gtk_widget_hide(g_list_nth_data(gtk_container_get_children( gtk_widget_get_parent(gtk_widget_get_parent(wnd_data->tab_container))), 0));
+  gtk_widget_hide(g_list_nth_data(gtk_container_get_children( gtk_widget_get_parent(wnd_data->tab_container)), 0) );
   
   wnd_data->management_mode = false;
 }
@@ -1005,21 +1012,41 @@ void ommit_mouse_events_btn(GtkToggleButton* self, gpointer user_data)
     return;
   }
   
-  GtkWidget *wid = gtk_notebook_get_nth_page(wnd_data->tab_container, gtk_notebook_get_current_page(wnd_data->tab_container));
-  
-  gtk_widget_realize(wid);
-  gtk_widget_realize(wnd_data->tab_container);
+  GtkWidget *wid = gtk_widget_get_parent(wnd_data->tab_container);
   
   if (toggled) {
-    gtk_widget_set_events(wnd_data->tab_container, (gtk_widget_get_events(wnd_data->tab_container) | GDK_BUTTON_PRESS_MASK | GDK_POINTER_MOTION_MASK ));
-    gtk_widget_set_events(wid, (gtk_widget_get_events(wnd_data->tab_container) | GDK_BUTTON_PRESS_MASK | GDK_POINTER_MOTION_MASK ));
-    
-  }
+    gtk_widget_set_events(wid, (gtk_widget_get_events(wid) | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK | GDK_POINTER_MOTION_MASK ));
+    }
   else {
-    gtk_widget_set_events(wnd_data->tab_container, (gtk_widget_get_events(wnd_data->tab_container) & (~(GDK_BUTTON_PRESS_MASK  | GDK_POINTER_MOTION_MASK ))));
-    gtk_widget_set_events(wid, (gtk_widget_get_events(wnd_data->tab_container) & (~(GDK_BUTTON_PRESS_MASK  | GDK_POINTER_MOTION_MASK ))));
+    gtk_widget_set_events(wid, (gtk_widget_get_events(wid) & (~(GDK_BUTTON_PRESS_MASK  | GDK_BUTTON_RELEASE_MASK  | GDK_POINTER_MOTION_MASK ))));
   }
 }
+
+gboolean redirect_mouse_event_btn_press(GtkWidget* self, GdkEventButton *event, gpointer user_data)
+{
+  gboolean ret;
+  struct wnd_data *wnd_data = (struct wnd_data*) user_data;
+
+ // g_signal_emit_by_name(wnd_data->tHB, "button-press-event", event, user_data, &ret);
+  
+  gtk_propagate_event(wnd_data->tHB, event);
+  
+  return TRUE;
+}
+
+gboolean redirect_mouse_event_btn_release(GtkWidget* self, GdkEventButton *event, gpointer user_data)
+{
+  gboolean ret;
+  struct wnd_data *wnd_data = (struct wnd_data*) user_data;
+  
+  gtk_propagate_event(wnd_data->tHB, event);
+  
+//   g_signal_emit_by_name(wnd_data->tHB, "button-press-event", event, user_data, &ret);
+ // g_signal_emit_by_name(wnd_data->tHB, "button-release-event", event, user_data, &ret);
+  
+  return TRUE;
+}
+
 
 static void set_vis_old_school(GtkToggleButton *togglebutton,struct wnd_data *data)
 {
@@ -1431,6 +1458,14 @@ static void real_close_tab(WebKitWebView *wv)
   }
 }
 
+gboolean super_hook(GSignalInvocationHint *ihint,
+                                                         guint n_param_values,
+                                                         const GValue *param_values,
+                                                         gpointer data)
+{
+  
+  return TRUE;
+}
 int main(int argc, char **argv)
 {
   bool use_headerbar = false;
@@ -1515,7 +1550,6 @@ int main(int argc, char **argv)
   gtk_widget_show_all(box);
   */
   
-  GtkEventBox *event_notebook = gtk_event_box_new();
   GtkOverlay *m_overlay = (GtkOverlay*) gtk_overlay_new();
   wnd_data.tHB = NULL;
   if (use_headerbar) {
@@ -1552,6 +1586,12 @@ int main(int argc, char **argv)
   gtk_widget_set_size_request(HB_container, w, h);
   
   gtk_overlay_set_overlay_pass_through(HB_Overlay, HB_container, true);
+  
+  guint sig_id_press = g_signal_lookup("button-press-event", G_OBJECT_TYPE(wnd_data.tHB));
+  guint sig_id_rel = g_signal_lookup("button-releases-event", G_OBJECT_TYPE(wnd_data.tHB));
+  
+  g_signal_add_emission_hook(sig_id_press, NULL,    super_hook,NULL, NULL);
+  g_signal_add_emission_hook(sig_id_rel, NULL,    super_hook,NULL, NULL);
   }
   
   GtkBox *tabsBox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
@@ -1564,9 +1604,9 @@ int main(int argc, char **argv)
   gtk_style_context_add_provider(gtk_widget_get_style_context(placeholder), prov1, GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
 
   gtk_box_pack_start(tabsBox, placeholder, 0, 1, 0);
-  gtk_box_pack_start(tabsBox, tabs, 1, 1, 0);
-  gtk_container_add(event_notebook, tabsBox);
-  gtk_overlay_add_overlay(m_overlay, event_notebook);
+  gtk_box_pack_start(tabsBox, tabs, 1, 1, 0);;
+  
+  gtk_overlay_add_overlay(m_overlay, tabsBox);
   gtk_widget_set_size_request(tabsBox, 800, 600);
   
   
