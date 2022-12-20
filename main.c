@@ -330,6 +330,8 @@ gboolean mouse_btn_release_on_tab(GtkWidget* self, GdkEventButton *event, gpoint
 
 gboolean allow_drag_tab_wv(GtkWidget* self, GdkEventButton *event, gpointer user_data)
 {
+  
+  // TODO: HERE - we check management mode instead of check timeout?
   struct wnd_data *wnd_data = (struct wnd_data*) user_data;
   
   gint rx, ry;
@@ -387,12 +389,13 @@ gboolean allow_drag_tab_wv(GtkWidget* self, GdkEventButton *event, gpointer user
        
          gtk_widget_set_size_request(g_list_nth_data(gtk_container_get_children( gtk_widget_get_parent(wnd_data->tab_container)), 0), w, h);
       }
+       return FALSE;
     }
     else {
       
       g_signal_emit_by_name(wnd_data->tHB, "popup-menu", NULL);
-    }
       return TRUE;
+    }
     }
   }
   wnd_data->r_click_time= 0;
@@ -1585,12 +1588,13 @@ int main(int argc, char **argv)
   gtk_widget_set_size_request(HB_container, w, h);
   
   gtk_overlay_set_overlay_pass_through(HB_Overlay, HB_container, true);
-  
+#if 0
   guint sig_id_press = g_signal_lookup("button-press-event", G_OBJECT_TYPE(wnd_data.tHB));
   guint sig_id_rel = g_signal_lookup("button-releases-event", G_OBJECT_TYPE(wnd_data.tHB));
   
   g_signal_add_emission_hook(sig_id_press, NULL,    super_hook,NULL, NULL);
   g_signal_add_emission_hook(sig_id_rel, NULL,    super_hook,NULL, NULL);
+#endif
   }
   
   GtkBox *tabsBox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
