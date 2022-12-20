@@ -1,0 +1,13 @@
+.flatpak-builder/
+.kdev4/
+Screenshots/
+V2BlankBrowser.kdev4
+build-flatpak/
+build/
+debug/
+logi
+main.c-cpy
+repo
+run/
+  
+        
