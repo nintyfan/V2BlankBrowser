@@ -338,14 +338,11 @@ gboolean allow_drag_tab_wv(GtkWidget* self, GdkEventButton *event, gpointer user
   
   gint rx, ry;
   
-  puts("OK");
-  
   if ( NULL != wnd_data->tHB && 0 == wnd_data->r_click_time && 3 == event->button) {
   
     wnd_data->r_click_time = time(NULL);
     
     gtk_main();
-    printf("SHOULD SHOWN PUPUP?%ld\n", wnd_data->r_click_time);
     if (wnd_data->r_click_time > 5) {
        wnd_data->r_click_time = 0;
     
