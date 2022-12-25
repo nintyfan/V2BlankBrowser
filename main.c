@@ -60,6 +60,7 @@ struct wnd_data {
   GtkFixed *HB_container;
 };
 
+static void set_headerbar_curr_vis(struct wnd_data *wnd_data, bool value);
 static void switch_management_mode(struct wnd_data *wnd_data);
 static void init_v1_ui(struct wnd_data *wnd_data, GtkOverlay *overlay, GtkOverlay *root_overlay);
 static void real_close_tab(WebKitWebView *wv);
@@ -347,7 +348,7 @@ gboolean allow_drag_tab_wv(GtkWidget* self, GdkEventButton *event, gpointer user
        wnd_data->r_click_time = 0;
     
        
-    switch_management_mode(wnd_data);
+    set_headerbar_curr_vis(wnd_data, wnd_data->management_mode ^ 1);
     
     return FALSE;
   }
@@ -591,19 +592,7 @@ static void HB_close_fnc(GtkWidget *widget, gpointer user_data)
 
     gtk_widget_hide(wnd_data->tHB);
   }
-  g_object_ref( gtk_widget_get_parent(wnd_data->tab_container));
-  
-  gtk_container_remove(gtk_widget_get_parent(gtk_widget_get_parent(wnd_data->tab_container)),gtk_widget_get_parent(wnd_data->tab_container));
-  
-  gtk_overlay_add_overlay(g_list_nth_data(gtk_container_get_children(wnd_data->m_wnd), 0), gtk_widget_get_parent(wnd_data->tab_container));
-  /* FIXME: Hack. We should reset/delete size request */
-  gtk_widget_set_size_request(wnd_data->HB_Overlay, 25, 20);
-  g_object_unref( gtk_widget_get_parent(wnd_data->tab_container));
-  gtk_header_bar_set_custom_title(wnd_data->tHB, NULL);
-  
-  gtk_widget_hide(g_list_nth_data(gtk_container_get_children( gtk_widget_get_parent(wnd_data->tab_container)), 0) );
-  
-  wnd_data->management_mode = false;
+
 }
 
 static void sclose_tab(GtkWidget *widget, gpointer user_data)
@@ -978,11 +967,9 @@ void ommit_mouse_events_btn(GtkToggleButton* self, gpointer user_data)
   }
 }
 
-static void switch_management_mode(struct wnd_data *wnd_data)
+void set_headerbar_curr_vis(struct wnd_data* wnd_data, bool value)
 {
-  if (false == wnd_data->management_mode) {
-   
-    #if 1
+  if (value) {
     
     g_object_ref( gtk_widget_get_parent(wnd_data->tab_container));
     gtk_container_remove(g_list_nth_data(gtk_container_get_children(wnd_data->m_wnd), 0), gtk_widget_get_parent(wnd_data->tab_container));
@@ -1002,7 +989,7 @@ static void switch_management_mode(struct wnd_data *wnd_data)
     
     
     wnd_data->management_mode = true;
-    #if 0      
+
     if (InManagementAndNonManagement == wnd_data->SHOW_HEADERBAR) {
       gint h = gtk_widget_get_allocated_height(wnd_data->tHB);
       gint w = gtk_widget_get_allocated_width(wnd_data->tHB);
@@ -1010,11 +997,29 @@ static void switch_management_mode(struct wnd_data *wnd_data)
       
       gtk_widget_set_size_request(g_list_nth_data(gtk_container_get_children( gtk_widget_get_parent(wnd_data->tab_container)), 0), w, h);
   }
-  #endif
-  #endif
+
   }
   else {
+    
+    g_object_ref( gtk_widget_get_parent(wnd_data->tab_container));
+    
+    gtk_container_remove(gtk_widget_get_parent(gtk_widget_get_parent(wnd_data->tab_container)),gtk_widget_get_parent(wnd_data->tab_container));
+    
+    gtk_overlay_add_overlay(g_list_nth_data(gtk_container_get_children(wnd_data->m_wnd), 0), gtk_widget_get_parent(wnd_data->tab_container));
+    /* FIXME: Hack. We should reset/delete size request */
+    gtk_widget_set_size_request(wnd_data->HB_Overlay, 25, 20);
+    g_object_unref( gtk_widget_get_parent(wnd_data->tab_container));
+    gtk_header_bar_set_custom_title(wnd_data->tHB, NULL);
+    
+    gtk_widget_hide(g_list_nth_data(gtk_container_get_children( gtk_widget_get_parent(wnd_data->tab_container)), 0) );
+    
+    wnd_data->management_mode = false;
   }
+  
+}
+
+static void switch_headerbar_whole_space(struct wnd_data *wnd_data)
+{
   if (NULL == wnd_data->management_mode_handler) {
     
     wnd_data->management_mode_handler = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
@@ -1064,6 +1069,12 @@ static void switch_management_mode(struct wnd_data *wnd_data)
     gtk_widget_destroy(wnd_data->management_mode_handler);
     wnd_data->management_mode_handler = NULL;
   }
+}
+
+static void switch_management_mode(struct wnd_data *wnd_data)
+{
+  set_headerbar_curr_vis(wnd_data, wnd_data->management_mode_handler ? FALSE : TRUE);
+  switch_headerbar_whole_space(wnd_data);
 }
 
 gboolean redirect_mouse_event_btn_press(GtkWidget* self, GdkEventButton *event, gpointer user_data)
