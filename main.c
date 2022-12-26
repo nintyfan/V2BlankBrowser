@@ -1283,7 +1283,6 @@ static void setup_main_window(struct wnd_data *wnd_data)
   
   
   
-  gtk_window_set_default_size(wnd_data->m_wnd, 800, 600);
   gtk_widget_show_all(wnd_data->m_wnd);
   
   gtk_widget_hide(placeholder);
@@ -1291,12 +1290,17 @@ static void setup_main_window(struct wnd_data *wnd_data)
 
 static void display_headerbar(GtkToggleButton* self, gpointer user_data)
 {
+  guint w,h;
   struct wnd_data *wnd_data = (struct wnd_data*) user_data;
   bool checked = gtk_toggle_button_get_active(self);
   
   GtkWindow *m_wnd, *old_m_wnd;
   GtkWidget *main = g_list_nth_data(gtk_container_get_children(wnd_data->m_wnd), 0);
   g_object_ref(main);
+  
+  gtk_window_get_size(wnd_data->m_wnd, &w, &h);
+  
+  
   gtk_container_remove(wnd_data->m_wnd, main);
   
   m_wnd = gtk_window_new(GTK_WINDOW_TOPLEVEL);
@@ -1317,7 +1321,9 @@ static void display_headerbar(GtkToggleButton* self, gpointer user_data)
   gtk_container_add(m_wnd, main);
    g_object_unref(main);
    
+    gtk_window_set_default_size(wnd_data->m_wnd, w, h);
     setup_main_window(wnd_data);
+    
 }
 
 void create_main_page(GtkNotebook *notebook, struct wnd_data *wnd)
@@ -1800,6 +1806,7 @@ int main(int argc, char **argv)
   
   
   
+  gtk_window_set_default_size(wnd_data.m_wnd, 800, 600);
   gtk_container_add((GtkContainer*)mWindow, (GtkWidget*)m_overlay);
    setup_main_window(&wnd_data);
   
