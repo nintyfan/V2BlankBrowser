@@ -63,6 +63,8 @@ struct wnd_data {
   bool management_mode_user_setting;
 };
 
+static void setup_main_window(struct wnd_data *wnd_data);
+
 static void headerbar_clicked(GtkWidget *widget, GdkEvent *event, gpointer user_data);
 static void switch_headerbar_whole_space(struct wnd_data *wnd_data, enum CONFIG_TRI_BOOL value);
 static void set_headerbar_curr_vis(struct wnd_data *wnd_data, enum CONFIG_TRI_BOOL value);
@@ -1255,32 +1257,67 @@ GtkHeaderBar *create_headerbar(struct wnd_data *wnd_data)
   return HB;
 }
 
+static void setup_main_window(struct wnd_data *wnd_data)
+{
+  
+  gint w,h;
+  w = 800;
+  h = 600;
+  
+  GtkButton *placeholder = g_list_nth_data(gtk_container_get_children(g_list_nth_data(gtk_container_get_children(g_list_nth_data(gtk_container_get_children(wnd_data->m_wnd), 0)), 0)), 0);
+  
+  if (wnd_data->tHB) {
+    
+    gint w_, h_;
+    h_ = gtk_widget_get_allocated_height(wnd_data->tHB);
+    w_ = gtk_widget_get_allocated_width(wnd_data->tHB);
+    
+    gtk_widget_set_size_request(placeholder, w_, h_);
+    
+    w -= w_;
+    h -= h_;
+    
+  }
+  
+  gtk_widget_set_size_request(wnd_data->tab_container, w, h);
+  
+  
+  
+  gtk_window_set_default_size(wnd_data->m_wnd, 800, 600);
+  gtk_widget_show_all(wnd_data->m_wnd);
+  
+  gtk_widget_hide(placeholder);
+}
+
 static void display_headerbar(GtkToggleButton* self, gpointer user_data)
 {
   struct wnd_data *wnd_data = (struct wnd_data*) user_data;
   bool checked = gtk_toggle_button_get_active(self);
   
-  GtkWindow *m_wnd;
+  GtkWindow *m_wnd, *old_m_wnd;
   GtkWidget *main = g_list_nth_data(gtk_container_get_children(wnd_data->m_wnd), 0);
+  g_object_ref(main);
   gtk_container_remove(wnd_data->m_wnd, main);
   
   m_wnd = gtk_window_new(GTK_WINDOW_TOPLEVEL);
   
-  
-  if (!checked) {
-    
-    gtk_window_set_titlebar(m_wnd, create_headerbar(wnd_data));
-    
-  }
-  else {
-    gtk_window_set_titlebar(m_wnd, NULL);
-  }
-    
-  gtk_widget_destroy(wnd_data->m_wnd);
-  
+  old_m_wnd = wnd_data->m_wnd;
   wnd_data->m_wnd = m_wnd;
+  wnd_data->tHB = NULL;
+  
+  if (checked) {
+     create_headerbar(wnd_data);
+     
+     gtk_widget_show_all(wnd_data->tHB);
+    
+  }
+    
+  gtk_widget_destroy(old_m_wnd);
+  
   gtk_container_add(m_wnd, main);
-  gtk_widget_show_all(wnd_data->m_wnd);
+   g_object_unref(main);
+   
+    setup_main_window(wnd_data);
 }
 
 void create_main_page(GtkNotebook *notebook, struct wnd_data *wnd)
@@ -1383,7 +1420,7 @@ void create_main_page(GtkNotebook *notebook, struct wnd_data *wnd)
   
   wnd->hideTopBarCheck = checkbox;
   
-  GtkCheckButton *check = gtk_check_button_new_with_label("Use headerbar");
+  GtkCheckButton *check = gtk_check_button_new_with_label("Use headerbar (enabling enables some extra features; changing state will restart application)");
   
   g_signal_connect(check, "toggled", G_CALLBACK(display_headerbar), wnd);
   
@@ -1728,8 +1765,6 @@ int main(int argc, char **argv)
   
   gtk_widget_show((GtkWidget*)new_tab_btn);
   
-  gtk_window_set_default_size((GtkWindow*)mWindow, 800, 600);
-  
   wnd_data.tab_container = tabs;
   
   /*GtkHeaderBar *HB = gtk_header_bar_new();
@@ -1764,30 +1799,9 @@ int main(int argc, char **argv)
   gtk_widget_set_size_request(tabsBox, 800, 600);
   
   
-  gint w,h;
-  w = 800;
-  h = 600;
-  
-  if (wnd_data.tHB) {
-    
-    gint w_, h_;
-    h_ = gtk_widget_get_allocated_height(wnd_data.tHB);
-    w_ = gtk_widget_get_allocated_width(wnd_data.tHB);
-   
-    gtk_widget_set_size_request(placeholder, w_, h_);
-    
-    w -= w_;
-    h -= h_;
-    
-  }
-  
-  gtk_widget_set_size_request(tabs, w, h);
-  
   
   gtk_container_add((GtkContainer*)mWindow, (GtkWidget*)m_overlay);
-
-  gtk_widget_show_all((GtkWidget*)mWindow);
-  gtk_widget_hide(placeholder);
+   setup_main_window(&wnd_data);
   
   gtk_main();
 }
