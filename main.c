@@ -37,6 +37,8 @@
 enum NAVIGATION_FLOAT_POS { top, bottom };
 enum NAVIGATION_UI_SELECTION { oldschool, floating, both };
 enum SHOW_HEADERBAR { OnlyInNonManagement, InManagementAndNonManagement, Never };
+enum CONFIG_TRI_BOOL { YES, NO, USER };
+
 
 struct wnd_data {
 
@@ -58,9 +60,11 @@ struct wnd_data {
   enum SHOW_HEADERBAR SHOW_HEADERBAR;
   GtkBox *management_mode_handler;
   GtkFixed *HB_container;
+  bool management_mode_user_setting;
 };
 
-static void set_headerbar_curr_vis(struct wnd_data *wnd_data, bool value);
+static void switch_headerbar_whole_space(struct wnd_data *wnd_data, enum CONFIG_TRI_BOOL value);
+static void set_headerbar_curr_vis(struct wnd_data *wnd_data, enum CONFIG_TRI_BOOL value);
 static void switch_management_mode(struct wnd_data *wnd_data);
 static void init_v1_ui(struct wnd_data *wnd_data, GtkOverlay *overlay, GtkOverlay *root_overlay);
 static void real_close_tab(WebKitWebView *wv);
@@ -73,6 +77,24 @@ gboolean window_resize(GtkWidget* self, GdkEventConfigure *event, gpointer user_
 static void aswitch_tab_btn(GtkWidget *widget, gpointer user_data);
 static void real_new_tab(GtkWidget *widget, struct wnd_data *wnd_data);
 
+
+static gboolean enter_fullscreen(WebKitWebView *web_view, gpointer user_data)
+{
+  struct wnd_data *wnd_data = (struct wnd_data*) user_data;
+  set_headerbar_curr_vis(wnd_data, YES);
+  switch_headerbar_whole_space(wnd_data, NO);
+  
+  return FALSE;
+}
+
+static gboolean leave_fullscreen(WebKitWebView *web_view, gpointer user_data)
+{
+  struct wnd_data *wnd_data = (struct wnd_data*) user_data;
+  set_headerbar_curr_vis(wnd_data, USER);
+  switch_headerbar_whole_space(wnd_data, USER);
+  
+  return FALSE;
+}
 
 static WebKitWebView *get_webview(GtkWidget *widget)
 {
@@ -212,6 +234,9 @@ static GtkWidget *create_tab(const char *uri, struct wnd_data *wnd_data)
   webContent = (WebKitWebView*) webkit_web_view_new();
   webkit_web_view_load_uri(webContent, uri);
   
+  g_signal_connect(webContent, "enter-fullscreen", G_CALLBACK(enter_fullscreen), wnd_data);
+  g_signal_connect(webContent, "leave-fullscreen", G_CALLBACK(leave_fullscreen), wnd_data);
+  
   return (GtkWidget*)webContent;
 }
 
@@ -347,8 +372,9 @@ gboolean allow_drag_tab_wv(GtkWidget* self, GdkEventButton *event, gpointer user
     if (wnd_data->r_click_time > 5) {
        wnd_data->r_click_time = 0;
     
-       
-    set_headerbar_curr_vis(wnd_data, wnd_data->management_mode ^ 1);
+    
+    wnd_data->management_mode ^= 1;
+    set_headerbar_curr_vis(wnd_data, wnd_data->management_mode ? YES: NO);
     
     return FALSE;
   }
@@ -967,9 +993,9 @@ void ommit_mouse_events_btn(GtkToggleButton* self, gpointer user_data)
   }
 }
 
-void set_headerbar_curr_vis(struct wnd_data* wnd_data, bool value)
+void set_headerbar_curr_vis(struct wnd_data* wnd_data, enum CONFIG_TRI_BOOL value)
 {
-  if (value) {
+  if (NO == value || (USER == value && wnd_data->management_mode)) {
     
     g_object_ref( gtk_widget_get_parent(wnd_data->tab_container));
     gtk_container_remove(g_list_nth_data(gtk_container_get_children(wnd_data->m_wnd), 0), gtk_widget_get_parent(wnd_data->tab_container));
@@ -987,8 +1013,6 @@ void set_headerbar_curr_vis(struct wnd_data* wnd_data, bool value)
     wnd_data->title_wid = gtk_label_new(NULL);
     gtk_header_bar_set_custom_title(wnd_data->tHB, wnd_data->title_wid);
     
-    
-    wnd_data->management_mode = true;
 
     if (InManagementAndNonManagement == wnd_data->SHOW_HEADERBAR) {
       gint h = gtk_widget_get_allocated_height(wnd_data->tHB);
@@ -1013,15 +1037,18 @@ void set_headerbar_curr_vis(struct wnd_data* wnd_data, bool value)
     
     gtk_widget_hide(g_list_nth_data(gtk_container_get_children( gtk_widget_get_parent(wnd_data->tab_container)), 0) );
     
-    wnd_data->management_mode = false;
   }
   
 }
 
-static void switch_headerbar_whole_space(struct wnd_data *wnd_data)
+static void switch_headerbar_whole_space(struct wnd_data *wnd_data, enum CONFIG_TRI_BOOL value)
 {
-  if (NULL == wnd_data->management_mode_handler) {
+  if (YES == value || (USER == value && TRUE == wnd_data->management_mode_user_setting)) {
     
+    if (wnd_data->management_mode_handler) {
+    
+      return;
+    }
     wnd_data->management_mode_handler = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
     
     gtk_overlay_add_overlay(wnd_data->HB_Overlay, wnd_data->management_mode_handler);
@@ -1047,6 +1074,10 @@ static void switch_headerbar_whole_space(struct wnd_data *wnd_data)
   }
   else {
     
+    if (NULL == wnd_data->management_mode_handler) {
+      
+      return;
+    }
     g_object_ref(wnd_data->HB_container);
     
     gtk_container_remove(wnd_data->management_mode_handler, wnd_data->HB_container);
@@ -1073,8 +1104,17 @@ static void switch_headerbar_whole_space(struct wnd_data *wnd_data)
 
 static void switch_management_mode(struct wnd_data *wnd_data)
 {
-  set_headerbar_curr_vis(wnd_data, wnd_data->management_mode_handler ? FALSE : TRUE);
-  switch_headerbar_whole_space(wnd_data);
+  if (wnd_data->management_mode_user_setting) {
+  
+    wnd_data->management_mode = FALSE;
+  }
+  else {
+  
+    wnd_data->management_mode = TRUE;
+  }
+  wnd_data->management_mode_user_setting ^= 1;
+  set_headerbar_curr_vis(wnd_data,  wnd_data->management_mode);
+  switch_headerbar_whole_space(wnd_data, USER);
 }
 
 gboolean redirect_mouse_event_btn_press(GtkWidget* self, GdkEventButton *event, gpointer user_data)
@@ -1526,6 +1566,8 @@ gboolean super_hook(GSignalInvocationHint *ihint,
   
   return TRUE;
 }
+
+
 int main(int argc, char **argv)
 {
   bool use_headerbar = false;
@@ -1555,6 +1597,7 @@ int main(int argc, char **argv)
   wnd_data.management_mode_handler = NULL;
   
     wnd_data.nav_type = both;
+    wnd_data.management_mode_user_setting = FALSE;
     
     
     wnd_data.float_ui_pos = top;
