@@ -63,6 +63,7 @@ struct wnd_data {
   bool management_mode_user_setting;
 };
 
+static void headerbar_clicked(GtkWidget *widget, GdkEvent *event, gpointer user_data);
 static void switch_headerbar_whole_space(struct wnd_data *wnd_data, enum CONFIG_TRI_BOOL value);
 static void set_headerbar_curr_vis(struct wnd_data *wnd_data, enum CONFIG_TRI_BOOL value);
 static void switch_management_mode(struct wnd_data *wnd_data);
@@ -1206,6 +1207,82 @@ void displ_prop_topTabBar(GtkWidget *widget, gpointer *data)
 
 }
 
+GtkHeaderBar *create_headerbar(struct wnd_data *wnd_data)
+{
+  GtkToggleButton *redirect_self = NULL;
+  GtkBox *OverlayBox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL,0);
+  GtkOverlay *HB_Overlay = gtk_overlay_new();
+  GtkBox *HB_BOX = gtk_box_new(GTK_ORIENTATION_VERTICAL,0);
+  GtkFixed *HB_container = gtk_fixed_new();
+  GtkHeaderBar *HB = gtk_header_bar_new();
+  
+  gtk_window_set_titlebar(wnd_data->m_wnd, HB);
+  wnd_data->tHB = HB;
+  wnd_data->HB_Overlay = HB_Overlay;
+  GtkButton *HB_close = gtk_button_new_with_label("X");
+  redirect_self = gtk_toggle_button_new_with_label("Interact");
+  
+  gtk_fixed_put(HB_container, HB_close, 0, 0);
+  gtk_fixed_put(HB_container, redirect_self, 50, 0);
+  
+  //g_signal_connect(redirect_self, "toggled", ommit_mouse_events_btn, &wnd_data);
+  
+  gtk_overlay_add_overlay(HB_Overlay, HB_container);
+  gtk_overlay_reorder_overlay(HB_Overlay, HB_container, 1);
+  
+  wnd_data->HB_container = HB_container;
+  
+  gtk_box_pack_start(OverlayBox, HB_Overlay, 1, 1, 0);
+  g_signal_connect(HB_close, "clicked", HB_close_fnc, &wnd_data);
+  gtk_header_bar_pack_start(HB, OverlayBox);
+  
+  gint w,nw, h;
+  h = gtk_widget_get_allocated_height(wnd_data->tHB);
+  /* FIXME: Hack - prefered size do not work? */
+  w = 200;
+  gtk_widget_set_size_request(HB_Overlay, w, h);
+  gtk_widget_set_size_request(HB_container, w, h);
+  
+  gtk_overlay_set_overlay_pass_through(HB_Overlay, HB_container, true);
+  #if 0
+  guint sig_id_press = g_signal_lookup("button-press-event", G_OBJECT_TYPE(wnd_data->tHB));
+  guint sig_id_rel = g_signal_lookup("button-releases-event", G_OBJECT_TYPE(wnd_data->tHB));
+  
+  g_signal_add_emission_hook(sig_id_press, NULL,    super_hook,NULL, NULL);
+  g_signal_add_emission_hook(sig_id_rel, NULL,    super_hook,NULL, NULL);
+  #endif
+   g_signal_connect(redirect_self, "button-press-event", headerbar_clicked, wnd_data);
+  return HB;
+}
+
+static void display_headerbar(GtkToggleButton* self, gpointer user_data)
+{
+  struct wnd_data *wnd_data = (struct wnd_data*) user_data;
+  bool checked = gtk_toggle_button_get_active(self);
+  
+  GtkWindow *m_wnd;
+  GtkWidget *main = g_list_nth_data(gtk_container_get_children(wnd_data->m_wnd), 0);
+  gtk_container_remove(wnd_data->m_wnd, main);
+  
+  m_wnd = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+  
+  
+  if (!checked) {
+    
+    gtk_window_set_titlebar(m_wnd, create_headerbar(wnd_data));
+    
+  }
+  else {
+    gtk_window_set_titlebar(m_wnd, NULL);
+  }
+    
+  gtk_widget_destroy(wnd_data->m_wnd);
+  
+  wnd_data->m_wnd = m_wnd;
+  gtk_container_add(m_wnd, main);
+  gtk_widget_show_all(wnd_data->m_wnd);
+}
+
 void create_main_page(GtkNotebook *notebook, struct wnd_data *wnd)
 {
   GtkBox *box, *box2, *box3;
@@ -1305,6 +1382,12 @@ void create_main_page(GtkNotebook *notebook, struct wnd_data *wnd)
   g_signal_connect(checkbox, "toggled", (GCallback)displ_prop_topTabBar, wnd);
   
   wnd->hideTopBarCheck = checkbox;
+  
+  GtkCheckButton *check = gtk_check_button_new_with_label("Use headerbar");
+  
+  g_signal_connect(check, "toggled", G_CALLBACK(display_headerbar), wnd);
+  
+  gtk_box_pack_start(box3, (GtkWidget*)check, 1, 1, 0);
   
   gtk_widget_show_all((GtkWidget*)box);
 }
@@ -1662,47 +1745,7 @@ int main(int argc, char **argv)
   wnd_data.tHB = NULL;
   GtkToggleButton *redirect_self = NULL;
   if (use_headerbar) {
-  GtkBox *OverlayBox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL,0);
-  GtkOverlay *HB_Overlay = gtk_overlay_new();
-  GtkBox *HB_BOX = gtk_box_new(GTK_ORIENTATION_VERTICAL,0);
-  GtkFixed *HB_container = gtk_fixed_new();
-  GtkHeaderBar *HB = gtk_header_bar_new();
-  
-  gtk_window_set_titlebar(mWindow, HB);
-  wnd_data.tHB = HB;
-  wnd_data.HB_Overlay = HB_Overlay;
-  GtkButton *HB_close = gtk_button_new_with_label("X");
-  redirect_self = gtk_toggle_button_new_with_label("Interact");
-  
-  gtk_fixed_put(HB_container, HB_close, 0, 0);
-  gtk_fixed_put(HB_container, redirect_self, 50, 0);
-  
-  //g_signal_connect(redirect_self, "toggled", ommit_mouse_events_btn, &wnd_data);
-  
-  gtk_overlay_add_overlay(HB_Overlay, HB_container);
-  gtk_overlay_reorder_overlay(HB_Overlay, HB_container, 1);
-  
-  wnd_data.HB_container = HB_container;
-  
-  gtk_box_pack_start(OverlayBox, HB_Overlay, 1, 1, 0);
-  g_signal_connect(HB_close, "clicked", HB_close_fnc, &wnd_data);
-  gtk_header_bar_pack_start(HB, OverlayBox);
-
-  gint w,nw, h;
-  h = gtk_widget_get_allocated_height(wnd_data.tHB);
-  /* FIXME: Hack - prefered size do not work? */
-  w = 200;
-  gtk_widget_set_size_request(HB_Overlay, w, h);
-  gtk_widget_set_size_request(HB_container, w, h);
-  
-  gtk_overlay_set_overlay_pass_through(HB_Overlay, HB_container, true);
-#if 0
-  guint sig_id_press = g_signal_lookup("button-press-event", G_OBJECT_TYPE(wnd_data.tHB));
-  guint sig_id_rel = g_signal_lookup("button-releases-event", G_OBJECT_TYPE(wnd_data.tHB));
-  
-  g_signal_add_emission_hook(sig_id_press, NULL,    super_hook,NULL, NULL);
-  g_signal_add_emission_hook(sig_id_rel, NULL,    super_hook,NULL, NULL);
-#endif
+     wnd_data.tHB = create_headerbar(&wnd_data);
   }
   
   GtkBox *tabsBox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
@@ -1745,10 +1788,6 @@ int main(int argc, char **argv)
 
   gtk_widget_show_all((GtkWidget*)mWindow);
   gtk_widget_hide(placeholder);
-  if (redirect_self) {
-  
-      g_signal_connect(redirect_self, "button-press-event", headerbar_clicked, &wnd_data);
-  }
   
   gtk_main();
 }
