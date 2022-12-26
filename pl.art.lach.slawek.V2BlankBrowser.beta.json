@@ -1,0 +1,32 @@
+{
+  "id": "pl.art.lach.slawek.V2BlankBrowser",
+  "runtime": "org.gnome.Platform",
+  "runtime-version": "42",
+  
+  "finish-args" : [
+  "--device=dri",
+  "--share=ipc",
+  "--share=network",
+  "--socket=wayland",
+  "--socket=fallback-x11",
+  "--socket=pulseaudio",
+  "--filesystem=xdg-download"
+  ],
+  
+  "sdk": "org.gnome.Sdk",
+  "command": "V2BlankBrowser",
+  "modules": [
+  {
+    "name": "browser-app",
+    "buildsystem" : "cmake-ninja",
+    "sources": [
+    {
+      "type": "git",
+      "branch": "BETA",
+      "url": "https://github.com/nintyfan/V2BlankBrowser.git"
+    }
+    ]
+  }
+  ]
+  
+}
