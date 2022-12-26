@@ -1001,6 +1001,7 @@ void set_headerbar_curr_vis(struct wnd_data* wnd_data, enum CONFIG_TRI_BOOL valu
     gtk_container_remove(g_list_nth_data(gtk_container_get_children(wnd_data->m_wnd), 0), gtk_widget_get_parent(wnd_data->tab_container));
     gtk_overlay_add_overlay(wnd_data->HB_Overlay, gtk_widget_get_parent(wnd_data->tab_container));
     gtk_overlay_reorder_overlay(wnd_data->HB_Overlay, gtk_widget_get_parent(wnd_data->tab_container), 0);
+   
     
     gint w,h;
     gtk_window_get_size(wnd_data->m_wnd, &w, &h);
@@ -1031,7 +1032,7 @@ void set_headerbar_curr_vis(struct wnd_data* wnd_data, enum CONFIG_TRI_BOOL valu
     
     gtk_overlay_add_overlay(g_list_nth_data(gtk_container_get_children(wnd_data->m_wnd), 0), gtk_widget_get_parent(wnd_data->tab_container));
     /* FIXME: Hack. We should reset/delete size request */
-    gtk_widget_set_size_request(wnd_data->HB_Overlay, 25, 20);
+    gtk_widget_set_size_request(wnd_data->HB_Overlay, 200, 20);
     g_object_unref( gtk_widget_get_parent(wnd_data->tab_container));
     gtk_header_bar_set_custom_title(wnd_data->tHB, NULL);
     
@@ -1083,19 +1084,22 @@ static void switch_headerbar_whole_space(struct wnd_data *wnd_data, enum CONFIG_
     gtk_container_remove(wnd_data->management_mode_handler, wnd_data->HB_container);
     
     gtk_overlay_add_overlay(wnd_data->HB_Overlay, wnd_data->HB_container);
-    gtk_overlay_reorder_overlay(wnd_data->HB_Overlay, wnd_data->HB_container, 1);
     
-    #if 0
+    gtk_overlay_reorder_overlay(wnd_data->HB_Overlay, wnd_data->HB_container, 100);
+    #if 1
     gint w,nw, h;
-    h = gtk_widget_get_allocated_height(wnd_data.tHB);
+    //h = gtk_widget_get_allocated_height(wnd_data->tHB);
     /* FIXME: Hack - prefered size do not work? */
-    w = 200;
-    gtk_widget_set_size_request(HB_Overlay, w, h);
-    gtk_widget_set_size_request(HB_container, w, h);
+    //w = 200;
+    h = 50;
+    w = 50;
+    gtk_widget_set_size_request(wnd_data->HB_container, w, h);
     #endif
     gtk_overlay_set_overlay_pass_through(wnd_data->HB_Overlay, wnd_data->HB_container, true);
     
     g_object_unref(wnd_data->HB_container);
+    
+    gtk_widget_queue_draw(wnd_data->m_wnd);
     
     gtk_widget_destroy(wnd_data->management_mode_handler);
     wnd_data->management_mode_handler = NULL;
@@ -1113,7 +1117,7 @@ static void switch_management_mode(struct wnd_data *wnd_data)
     wnd_data->management_mode = TRUE;
   }
   wnd_data->management_mode_user_setting ^= 1;
-  set_headerbar_curr_vis(wnd_data,  wnd_data->management_mode);
+  set_headerbar_curr_vis(wnd_data, USER);
   switch_headerbar_whole_space(wnd_data, USER);
 }
 
