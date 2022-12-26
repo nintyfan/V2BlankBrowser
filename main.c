@@ -374,7 +374,7 @@ gboolean allow_drag_tab_wv(GtkWidget* self, GdkEventButton *event, gpointer user
     
     
     wnd_data->management_mode ^= 1;
-    set_headerbar_curr_vis(wnd_data, wnd_data->management_mode ? YES: NO);
+    set_headerbar_curr_vis(wnd_data, wnd_data->management_mode ? NO: YES);
     
     return FALSE;
   }
@@ -590,7 +590,7 @@ static void HB_close_btn_dialog_resp( GtkDialog* self,
 static void HB_close_fnc(GtkWidget *widget, gpointer user_data)
 {
   struct wnd_data *wnd_data = (struct wnd_data*) user_data;
-  
+  bool change = FALSE;
   
   if (InManagementAndNonManagement == wnd_data->SHOW_HEADERBAR
   ||  OnlyInNonManagement == wnd_data->SHOW_HEADERBAR) {
@@ -610,13 +610,32 @@ static void HB_close_fnc(GtkWidget *widget, gpointer user_data)
    
     gtk_widget_show_all(dialog);
   }
+  else {
   
+    change = TRUE;
+  }
   
   
   } 
   else {
+    change = TRUE;
+  }
+  
+  if (TRUE == change) {
+#if 0
+    wnd_data->management_mode_user_setting = NO;
 
-    gtk_widget_hide(wnd_data->tHB);
+    set_headerbar_curr_vis(wnd_data, YES);
+    switch_headerbar_whole_space(wnd_data, NO);
+#else
+
+    wnd_data->management_mode = FALSE;
+
+
+  wnd_data->management_mode_user_setting = NO;
+  set_headerbar_curr_vis(wnd_data, YES);
+  switch_headerbar_whole_space(wnd_data, NO);
+#endif
   }
 
 }
