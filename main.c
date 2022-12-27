@@ -1254,7 +1254,7 @@ GtkHeaderBar *create_headerbar(struct wnd_data *wnd_data)
   wnd_data->HB_container = HB_container;
   
   gtk_box_pack_start(OverlayBox, HB_Overlay, 1, 1, 0);
-  g_signal_connect(HB_close, "clicked", HB_close_fnc, &wnd_data);
+  g_signal_connect(HB_close, "clicked", HB_close_fnc, wnd_data);
   gtk_header_bar_pack_start(HB, OverlayBox);
   
   gint w,nw, h;
