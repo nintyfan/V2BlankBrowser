@@ -1,6 +1,6 @@
 /*
  *    V2BlankBrowser - browser with respect your monitor
- *    Copyright (C) 2021  Lach Sławomir <slawek@lach.art.pl>
+ *    Copyright (C) 2021-2026  Lach Sławomir <nintyfan19@gmail.com>
  *    
  *    This program is free software: you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License as published by
@@ -160,9 +160,9 @@ static void goto_info_page(GtkEntry *entry, GdkEvent *event, gpointer user_data)
   //WebKitWebView *view = (WebKitWebView *) ((struct wnd_data*)user_data)->current_tab;
   /* For some reason, no new item was inserted into history, but current is replaced */
 #if 0
-  webkit_web_view_load_html(view, "<html><head><title>About BlankBrowser</title></head><body><h1>License</h1><p><strong>Copyright 2021</strong> by Sławomir Lach s l a w e k @ l a c h . a r t . p l</p><p>BlankBrowser is under <a href='https://www.gnu.org/licenses/gpl-3.0.html'>GNU/GPLv3</a></p></body></html>", NULL);
+  webkit_web_view_load_html(view, "<html><head><title>About BlankBrowser</title></head><body><h1>License</h1><p><strong>Copyright 2021</strong> by Sławomir Lach n i n t y f a n 1 9 @ g m a i l . c o m</p><p>BlankBrowser is under <a href='https://www.gnu.org/licenses/gpl-3.0.html'>GNU/GPLv3</a></p></body></html>", NULL);
 #else
-  //webkit_web_view_load_uri(view, "data:text/html;charset=utf-8,<html><head><title>About BlankBrowser</title></head><body><h1>License</h1><p><strong>Copyright 2021</strong> by Sławomir Lach s l a w e k @ l a c h . a r t . p l</p><p>BlankBrowser is under <a href='https://www.gnu.org/licenses/gpl-3.0.html'>GNU/GPLv3</a></p></body></html>");
+  //webkit_web_view_load_uri(view, "data:text/html;charset=utf-8,<html><head><title>About BlankBrowser</title></head><body><h1>License</h1><p><strong>Copyright 2021-2026</strong> by Sławomir Lach n i n t y f a n 1 9 @ g m a i l . c o m</p><p>BlankBrowser is under <a href='https://www.gnu.org/licenses/gpl-3.0.html'>GNU/GPLv3</a></p></body></html>");
 #endif
 }
 
@@ -299,7 +299,7 @@ static void switch_tab(GtkNotebook* self, GtkWidget* page, guint page_num, gpoin
 
 gboolean show_widgets(GtkWidget* self, GdkEventButton *event, gpointer user_data)
 {
-  gtk_widget_set_visible(g_object_get_data(self, "urlbar"), TRUE);
+  gtk_widget_set_visible(g_object_get_data((GObject*)self, "urlbar"), TRUE);
   
   return FALSE;
 }
@@ -899,7 +899,7 @@ gtk_overlay_set_overlay_pass_through(overlay, (GtkWidget*)fixed, TRUE);
   gtk_overlay_add_overlay(root_overlay, (GtkWidget*)helper_overlay);
   gtk_notebook_insert_page((GtkNotebook*)wnd_data->tab_container, (GtkWidget*)root_overlay, (GtkWidget*)eb, 0);
   
-  g_object_set_data(eb, "urlbar", fixed);
+  g_object_set_data((GObject*)eb, "urlbar", fixed);
 
   gtk_overlay_set_overlay_pass_through(root_overlay, (GtkWidget*)overlay, TRUE);
   gtk_overlay_set_overlay_pass_through(root_overlay, (GtkWidget*)helper_overlay, TRUE);
@@ -1384,13 +1384,13 @@ void create_main_page(GtkNotebook *notebook, struct wnd_data *wnd)
   
   GtkLabel *license = (GtkLabel*) gtk_label_new(NULL);
   
-  gtk_label_set_markup(license, "<b><i>License</i></b>\n<b>Copyright 2021</b> by Sławomir Lach s l a w e k @ l a c h . a r t . p l\nV2BlankBrowser is under <a href='https://www.gnu.org/licenses/gpl-3.0.html'>GNU/GPLv3</a>");
+  gtk_label_set_markup(license, "<b><i>License</i></b>\n<b>Copyright 2021</b> by Sławomir Lach n i n t y f a n 1 9 @ g m a i l . c o m\nV2BlankBrowser is under <a href='https://www.gnu.org/licenses/gpl-3.0.html'>GNU/GPLv3</a>");
   
   GtkLabel *donate_lbl = (GtkLabel*)gtk_label_new(NULL);
   
   GtkLabel *opt_flc_label = (GtkLabel*)gtk_label_new("Show floating controls on (when activated)");
   
-  GtkLabel *info_about_tab_hidding = gtk_label_new("You can hide tabs (if present) by left click on bottom\n of it and move mouse on top of it.\n Next step requires releasing left mouse button.\n To show tabs again (again, if odlschool UI enabled)\n, left click on top of page\n, move mouse to bottom\n and release mouse button");
+  GtkLabel *info_about_tab_hidding = (GtkLabel*)gtk_label_new("You can hide tabs (if present) by left click on bottom\n of it and move mouse on top of it.\n Next step requires releasing left mouse button.\n To show tabs again (again, if odlschool UI enabled)\n, left click on top of page\n, move mouse to bottom\n and release mouse button");
   
   gtk_box_pack_start(box3, (GtkWidget*) info_about_tab_hidding, 1, 1, 0);
   
