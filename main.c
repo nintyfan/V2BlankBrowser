@@ -127,7 +127,7 @@ static void goto_info_page(GtkEntry *entry, GdkEvent *event, gpointer user_data)
 #if 0
   webkit_web_view_load_html(view, "<html><head><title>About BlankBrowser</title></head><body><h1>License</h1><p><strong>Copyright 2021</strong> by Sławomir Lach n i n t y f a n 1 9 @ g m a i l . c o m</p><p>BlankBrowser is under <a href='https://www.gnu.org/licenses/gpl-3.0.html'>GNU/GPLv3</a></p></body></html>", NULL);
 #else
-  //webkit_web_view_load_uri(view, "data:text/html;charset=utf-8,<html><head><title>About BlankBrowser</title></head><body><h1>License</h1><p><strong>Copyright 2021</strong> by Sławomir Lach s l a w e k @ l a c h . a r t . p l</p><p>BlankBrowser is under <a href='https://www.gnu.org/licenses/gpl-3.0.html'>GNU/GPLv3</a></p></body></html>");
+  //webkit_web_view_load_uri(view, "data:text/html;charset=utf-8,<html><head><title>About BlankBrowser</title></head><body><h1>License</h1><p><strong>Copyright 2021-2026</strong> by Sławomir Lach n i n t y f a n 1 9 @ g m a i l . c o m</p><p>BlankBrowser is under <a href='https://www.gnu.org/licenses/gpl-3.0.html'>GNU/GPLv3</a></p></body></html>");
 #endif
 }
 
@@ -934,7 +934,7 @@ void create_main_page(GtkNotebook *notebook, struct wnd_data *wnd)
   
   GtkLabel *license = (GtkLabel*) gtk_label_new(NULL);
   
-  gtk_label_set_markup(license, "<b><i>License</i></b>\n<b>Copyright 2021</b> by Sławomir Lach s l a w e k @ l a c h . a r t . p l\nV2BlankBrowser is under <a href='https://www.gnu.org/licenses/gpl-3.0.html'>GNU/GPLv3</a>");
+  gtk_label_set_markup(license, "<b><i>License</i></b>\n<b>Copyright 2021</b> by Sławomir Lach n i n t y f a n 1 9 @ g m a i l . c o m\nV2BlankBrowser is under <a href='https://www.gnu.org/licenses/gpl-3.0.html'>GNU/GPLv3</a>");
   
   GtkLabel *donate_lbl = (GtkLabel*)gtk_label_new(NULL);
   
