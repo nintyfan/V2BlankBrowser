@@ -587,7 +587,7 @@ static void HB_close_btn_dialog_resp( GtkDialog* self,
                                       gpointer user_data
 )
 {
-  gtk_widget_destroy(self);
+  gtk_widget_destroy((GtkWidget*)self);
 }
 
 static void HB_close_fnc(GtkWidget *widget, gpointer user_data)
@@ -602,7 +602,7 @@ static void HB_close_fnc(GtkWidget *widget, gpointer user_data)
   
   if (!wnd_data->management_mode) {
   
-   GtkDialog *dialog = gtk_message_dialog_new (wnd_data->m_wnd,
+   GtkDialog *dialog = (GtkDialog*) gtk_message_dialog_new (wnd_data->m_wnd,
                              GTK_DIALOG_DESTROY_WITH_PARENT | GTK_DIALOG_MODAL,
                             GTK_MESSAGE_INFO,
                             GTK_BUTTONS_CLOSE,
@@ -611,7 +611,7 @@ static void HB_close_fnc(GtkWidget *widget, gpointer user_data)
                      G_CALLBACK (HB_close_btn_dialog_resp),
                      NULL);
    
-    gtk_widget_show_all(dialog);
+    gtk_widget_show_all((GtkWidget*)dialog);
   }
   else {
   
@@ -1005,7 +1005,7 @@ void ommit_mouse_events_btn(GtkToggleButton* self, gpointer user_data)
     return;
   }
   
-  GtkWidget *wid = gtk_widget_get_parent(wnd_data->tab_container);
+  GtkWidget *wid = gtk_widget_get_parent((GtkWidget*)wnd_data->tab_container);
   
   if (toggled) {
     gtk_widget_set_events(wid, (gtk_widget_get_events(wid) | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK | GDK_POINTER_MOTION_MASK ));
@@ -1019,46 +1019,46 @@ void set_headerbar_curr_vis(struct wnd_data* wnd_data, enum CONFIG_TRI_BOOL valu
 {
   if (NO == value || (USER == value && wnd_data->management_mode)) {
     
-    g_object_ref( gtk_widget_get_parent(wnd_data->tab_container));
-    gtk_container_remove(g_list_nth_data(gtk_container_get_children(wnd_data->m_wnd), 0), gtk_widget_get_parent(wnd_data->tab_container));
-    gtk_overlay_add_overlay(wnd_data->HB_Overlay, gtk_widget_get_parent(wnd_data->tab_container));
-    gtk_overlay_reorder_overlay(wnd_data->HB_Overlay, gtk_widget_get_parent(wnd_data->tab_container), 0);
+    g_object_ref((GObject*) gtk_widget_get_parent((GtkWidget*)wnd_data->tab_container));
+    gtk_container_remove(g_list_nth_data(gtk_container_get_children((GtkContainer*)wnd_data->m_wnd), 0), gtk_widget_get_parent((GtkWidget*)wnd_data->tab_container));
+    gtk_overlay_add_overlay(wnd_data->HB_Overlay, gtk_widget_get_parent((GtkWidget*)wnd_data->tab_container));
+    gtk_overlay_reorder_overlay(wnd_data->HB_Overlay, gtk_widget_get_parent((GtkWidget*)wnd_data->tab_container), 0);
    
     
     gint w,h;
     gtk_window_get_size(wnd_data->m_wnd, &w, &h);
     //w+=gtk_widget_get_allocated_width(wnd_data->tHB);
-    h+=gtk_widget_get_allocated_height(wnd_data->tHB);
-    gtk_widget_set_size_request(wnd_data->HB_Overlay, w, h);
+    h+=gtk_widget_get_allocated_height((GtkWidget*)wnd_data->tHB);
+    gtk_widget_set_size_request((GtkWidget*)wnd_data->HB_Overlay, w, h);
     // gtk_header_bar_pack_start(wnd_data->tHB, wnd_data->tab_container);
-    g_object_unref( gtk_widget_get_parent(wnd_data->tab_container));
+    g_object_unref( gtk_widget_get_parent((GtkWidget*)wnd_data->tab_container));
     
     wnd_data->title_wid = gtk_label_new(NULL);
     gtk_header_bar_set_custom_title(wnd_data->tHB, wnd_data->title_wid);
     
 
     if (InManagementAndNonManagement == wnd_data->SHOW_HEADERBAR) {
-      gint h = gtk_widget_get_allocated_height(wnd_data->tHB);
-      gint w = gtk_widget_get_allocated_width(wnd_data->tHB);
-      gtk_widget_show_all(g_list_nth_data(gtk_container_get_children( gtk_widget_get_parent(wnd_data->tab_container)), 0));
+      gint h = gtk_widget_get_allocated_height((GtkWidget*)wnd_data->tHB);
+      gint w = gtk_widget_get_allocated_width((GtkWidget*)wnd_data->tHB);
+      gtk_widget_show_all(g_list_nth_data(gtk_container_get_children( (GtkContainer*)gtk_widget_get_parent((GtkWidget*)wnd_data->tab_container)), 0));
       
-      gtk_widget_set_size_request(g_list_nth_data(gtk_container_get_children( gtk_widget_get_parent(wnd_data->tab_container)), 0), w, h);
+      gtk_widget_set_size_request(g_list_nth_data(gtk_container_get_children( (GtkContainer*)gtk_widget_get_parent((GtkWidget*)wnd_data->tab_container)), 0), w, h);
   }
 
   }
   else {
     
-    g_object_ref( gtk_widget_get_parent(wnd_data->tab_container));
+    g_object_ref( (GObject*)gtk_widget_get_parent((GtkWidget*)wnd_data->tab_container));
     
-    gtk_container_remove(gtk_widget_get_parent(gtk_widget_get_parent(wnd_data->tab_container)),gtk_widget_get_parent(wnd_data->tab_container));
+    gtk_container_remove((GtkContainer*)gtk_widget_get_parent(gtk_widget_get_parent((GtkWidget*)wnd_data->tab_container)),gtk_widget_get_parent((GtkWidget*)wnd_data->tab_container));
     
-    gtk_overlay_add_overlay(g_list_nth_data(gtk_container_get_children(wnd_data->m_wnd), 0), gtk_widget_get_parent(wnd_data->tab_container));
+    gtk_overlay_add_overlay(g_list_nth_data(gtk_container_get_children((GtkContainer*)wnd_data->m_wnd), 0), gtk_widget_get_parent((GtkWidget*)wnd_data->tab_container));
     /* FIXME: Hack. We should reset/delete size request */
-    gtk_widget_set_size_request(wnd_data->HB_Overlay, 200, 20);
-    g_object_unref( gtk_widget_get_parent(wnd_data->tab_container));
+    gtk_widget_set_size_request((GtkWidget*)wnd_data->HB_Overlay, 200, 20);
+    g_object_unref( (GObject*)gtk_widget_get_parent((GtkWidget*)wnd_data->tab_container));
     gtk_header_bar_set_custom_title(wnd_data->tHB, NULL);
     
-    gtk_widget_hide(g_list_nth_data(gtk_container_get_children( gtk_widget_get_parent(wnd_data->tab_container)), 0) );
+    gtk_widget_hide(g_list_nth_data(gtk_container_get_children( (GtkContainer*)gtk_widget_get_parent((GtkWidget*)wnd_data->tab_container)), 0) );
     
   }
   
@@ -1072,24 +1072,24 @@ static void switch_headerbar_whole_space(struct wnd_data *wnd_data, enum CONFIG_
     
       return;
     }
-    wnd_data->management_mode_handler = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+    wnd_data->management_mode_handler = (GtkBox*)gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
     
-    gtk_overlay_add_overlay(wnd_data->HB_Overlay, wnd_data->management_mode_handler);
-    gtk_overlay_reorder_overlay(wnd_data->HB_Overlay, wnd_data->management_mode_handler, -1);
+    gtk_overlay_add_overlay(wnd_data->HB_Overlay, (GtkWidget*)wnd_data->management_mode_handler);
+    gtk_overlay_reorder_overlay(wnd_data->HB_Overlay, (GtkWidget*)wnd_data->management_mode_handler, -1);
     
     gint w,h;
     gtk_window_get_size(wnd_data->m_wnd, &w, &h);
     //w+=gtk_widget_get_allocated_width(wnd_data->tHB);
-    h+=gtk_widget_get_allocated_height(wnd_data->tHB);
-    gtk_widget_set_size_request(wnd_data->management_mode_handler, w, h);
+    h+=gtk_widget_get_allocated_height((GtkWidget*)wnd_data->tHB);
+    gtk_widget_set_size_request((GtkWidget*)wnd_data->management_mode_handler, w, h);
     
     g_object_ref(wnd_data->HB_container);
     
-    gtk_container_remove(gtk_widget_get_parent(wnd_data->HB_container), wnd_data->HB_container);
+    gtk_container_remove((GtkContainer*)gtk_widget_get_parent((GtkWidget*)wnd_data->HB_container), (GtkWidget*)wnd_data->HB_container);
     
-    gtk_box_pack_start(wnd_data->management_mode_handler, wnd_data->HB_container, 0, 0, 0);
+    gtk_box_pack_start(wnd_data->management_mode_handler, (GtkWidget*)wnd_data->HB_container, 0, 0, 0);
     
-    gtk_widget_show_all(wnd_data->management_mode_handler);
+    gtk_widget_show_all((GtkWidget*)wnd_data->management_mode_handler);
     
     g_object_unref(wnd_data->HB_container);
     
@@ -1103,11 +1103,11 @@ static void switch_headerbar_whole_space(struct wnd_data *wnd_data, enum CONFIG_
     }
     g_object_ref(wnd_data->HB_container);
     
-    gtk_container_remove(wnd_data->management_mode_handler, wnd_data->HB_container);
+    gtk_container_remove((GtkContainer*)wnd_data->management_mode_handler, (GtkWidget*)wnd_data->HB_container);
     
-    gtk_overlay_add_overlay(wnd_data->HB_Overlay, wnd_data->HB_container);
+    gtk_overlay_add_overlay(wnd_data->HB_Overlay, (GtkWidget*)wnd_data->HB_container);
     
-    gtk_overlay_reorder_overlay(wnd_data->HB_Overlay, wnd_data->HB_container, 100);
+    gtk_overlay_reorder_overlay(wnd_data->HB_Overlay, (GtkWidget*) wnd_data->HB_container, 100);
     #if 1
     gint w,nw, h;
     //h = gtk_widget_get_allocated_height(wnd_data->tHB);
@@ -1115,15 +1115,15 @@ static void switch_headerbar_whole_space(struct wnd_data *wnd_data, enum CONFIG_
     //w = 200;
     h = 50;
     w = 50;
-    gtk_widget_set_size_request(wnd_data->HB_container, w, h);
+    gtk_widget_set_size_request((GtkWidget*)wnd_data->HB_container, w, h);
     #endif
-    gtk_overlay_set_overlay_pass_through(wnd_data->HB_Overlay, wnd_data->HB_container, true);
+    gtk_overlay_set_overlay_pass_through(wnd_data->HB_Overlay, (GtkWidget*)wnd_data->HB_container, true);
     
     g_object_unref(wnd_data->HB_container);
     
-    gtk_widget_queue_draw(wnd_data->m_wnd);
+    gtk_widget_queue_draw((GtkWidget*)wnd_data->m_wnd);
     
-    gtk_widget_destroy(wnd_data->management_mode_handler);
+    gtk_widget_destroy((GtkWidget*)wnd_data->management_mode_handler);
     wnd_data->management_mode_handler = NULL;
   }
 }
@@ -1150,7 +1150,7 @@ gboolean redirect_mouse_event_btn_press(GtkWidget* self, GdkEventButton *event, 
 
  // g_signal_emit_by_name(wnd_data->tHB, "button-press-event", event, user_data, &ret);
   
-  gtk_propagate_event(wnd_data->tHB, event);
+  gtk_propagate_event((GtkWidget*)wnd_data->tHB, (GdkEvent*)event);
   
   return TRUE;
 }
@@ -1160,7 +1160,7 @@ gboolean redirect_mouse_event_btn_release(GtkWidget* self, GdkEventButton *event
   gboolean ret;
   struct wnd_data *wnd_data = (struct wnd_data*) user_data;
   
-  gtk_propagate_event(wnd_data->tHB, event);
+  gtk_propagate_event((GtkWidget*)wnd_data->tHB, (GdkEvent*)event);
   
 //   g_signal_emit_by_name(wnd_data->tHB, "button-press-event", event, user_data, &ret);
  // g_signal_emit_by_name(wnd_data->tHB, "button-release-event", event, user_data, &ret);
@@ -1231,40 +1231,40 @@ void displ_prop_topTabBar(GtkWidget *widget, gpointer *data)
 GtkHeaderBar *create_headerbar(struct wnd_data *wnd_data)
 {
   GtkToggleButton *redirect_self = NULL;
-  GtkBox *OverlayBox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL,0);
-  GtkOverlay *HB_Overlay = gtk_overlay_new();
-  GtkBox *HB_BOX = gtk_box_new(GTK_ORIENTATION_VERTICAL,0);
-  GtkFixed *HB_container = gtk_fixed_new();
-  GtkHeaderBar *HB = gtk_header_bar_new();
+  GtkBox *OverlayBox = (GtkBox*)gtk_box_new(GTK_ORIENTATION_HORIZONTAL,0);
+  GtkOverlay *HB_Overlay = (GtkOverlay*)gtk_overlay_new();
+  GtkBox *HB_BOX = (GtkBox*)gtk_box_new(GTK_ORIENTATION_VERTICAL,0);
+  GtkFixed *HB_container = (GtkFixed*)gtk_fixed_new();
+  GtkHeaderBar *HB = (GtkHeaderBar*)gtk_header_bar_new();
   
-  gtk_window_set_titlebar(wnd_data->m_wnd, HB);
+  gtk_window_set_titlebar((GtkWindow*)wnd_data->m_wnd,(GtkWidget*) HB);
   wnd_data->tHB = HB;
   wnd_data->HB_Overlay = HB_Overlay;
-  GtkButton *HB_close = gtk_button_new_with_label("X");
-  redirect_self = gtk_toggle_button_new_with_label("Interact");
+  GtkButton *HB_close = (GtkButton*)gtk_button_new_with_label("X");
+  redirect_self = (GtkToggleButton*)gtk_toggle_button_new_with_label("Interact");
   
-  gtk_fixed_put(HB_container, HB_close, 0, 0);
-  gtk_fixed_put(HB_container, redirect_self, 50, 0);
+  gtk_fixed_put(HB_container, (GtkWidget*)HB_close, 0, 0);
+  gtk_fixed_put(HB_container, (GtkWidget*)redirect_self, 50, 0);
   
   //g_signal_connect(redirect_self, "toggled", ommit_mouse_events_btn, &wnd_data);
   
-  gtk_overlay_add_overlay(HB_Overlay, HB_container);
-  gtk_overlay_reorder_overlay(HB_Overlay, HB_container, 1);
+  gtk_overlay_add_overlay(HB_Overlay, (GtkWidget*)HB_container);
+  gtk_overlay_reorder_overlay(HB_Overlay, (GtkWidget*)HB_container, 1);
   
   wnd_data->HB_container = HB_container;
   
-  gtk_box_pack_start(OverlayBox, HB_Overlay, 1, 1, 0);
-  g_signal_connect(HB_close, "clicked", HB_close_fnc, wnd_data);
-  gtk_header_bar_pack_start(HB, OverlayBox);
+  gtk_box_pack_start(OverlayBox, (GtkWidget*)HB_Overlay, 1, 1, 0);
+  g_signal_connect(HB_close, "clicked", (GCallback)HB_close_fnc, wnd_data);
+  gtk_header_bar_pack_start(HB, (GtkWidget*)OverlayBox);
   
   gint w,nw, h;
-  h = gtk_widget_get_allocated_height(wnd_data->tHB);
+  h = gtk_widget_get_allocated_height((GtkWidget*)wnd_data->tHB);
   /* FIXME: Hack - prefered size do not work? */
   w = 200;
-  gtk_widget_set_size_request(HB_Overlay, w, h);
-  gtk_widget_set_size_request(HB_container, w, h);
+  gtk_widget_set_size_request((GtkWidget*)HB_Overlay, w, h);
+  gtk_widget_set_size_request((GtkWidget*)HB_container, w, h);
   
-  gtk_overlay_set_overlay_pass_through(HB_Overlay, HB_container, true);
+  gtk_overlay_set_overlay_pass_through(HB_Overlay, (GtkWidget*)HB_container, true);
   #if 0
   guint sig_id_press = g_signal_lookup("button-press-event", G_OBJECT_TYPE(wnd_data->tHB));
   guint sig_id_rel = g_signal_lookup("button-releases-event", G_OBJECT_TYPE(wnd_data->tHB));
@@ -1272,7 +1272,7 @@ GtkHeaderBar *create_headerbar(struct wnd_data *wnd_data)
   g_signal_add_emission_hook(sig_id_press, NULL,    super_hook,NULL, NULL);
   g_signal_add_emission_hook(sig_id_rel, NULL,    super_hook,NULL, NULL);
   #endif
-   g_signal_connect(redirect_self, "button-press-event", headerbar_clicked, wnd_data);
+   g_signal_connect(redirect_self, "button-press-event", (GCallback)headerbar_clicked, wnd_data);
   return HB;
 }
 
@@ -1283,28 +1283,28 @@ static void setup_main_window(struct wnd_data *wnd_data)
   w = 800;
   h = 600;
   
-  GtkButton *placeholder = g_list_nth_data(gtk_container_get_children(g_list_nth_data(gtk_container_get_children(g_list_nth_data(gtk_container_get_children(wnd_data->m_wnd), 0)), 0)), 0);
+  GtkButton *placeholder = (GtkButton*)g_list_nth_data(gtk_container_get_children(g_list_nth_data(gtk_container_get_children((GtkContainer*)g_list_nth_data(gtk_container_get_children((GtkContainer*)wnd_data->m_wnd), 0)), 0)), 0);
   
   if (wnd_data->tHB) {
     
     gint w_, h_;
-    h_ = gtk_widget_get_allocated_height(wnd_data->tHB);
-    w_ = gtk_widget_get_allocated_width(wnd_data->tHB);
+    h_ = gtk_widget_get_allocated_height((GtkWidget*)wnd_data->tHB);
+    w_ = gtk_widget_get_allocated_width((GtkWidget*)wnd_data->tHB);
     
-    gtk_widget_set_size_request(placeholder, w_, h_);
+    gtk_widget_set_size_request((GtkWidget*)placeholder, w_, h_);
     
     w -= w_;
     h -= h_;
     
   }
   
-  gtk_widget_set_size_request(wnd_data->tab_container, w, h);
+  gtk_widget_set_size_request((GtkWidget*)wnd_data->tab_container, w, h);
   
   
   
-  gtk_widget_show_all(wnd_data->m_wnd);
+  gtk_widget_show_all((GtkWidget*)wnd_data->m_wnd);
   
-  gtk_widget_hide(placeholder);
+  gtk_widget_hide((GtkWidget*)placeholder);
 }
 
 static void display_headerbar(GtkToggleButton* self, gpointer user_data)
@@ -1314,15 +1314,15 @@ static void display_headerbar(GtkToggleButton* self, gpointer user_data)
   bool checked = gtk_toggle_button_get_active(self);
   
   GtkWindow *m_wnd, *old_m_wnd;
-  GtkWidget *main = g_list_nth_data(gtk_container_get_children(wnd_data->m_wnd), 0);
+  GtkWidget *main = (GtkWidget*)g_list_nth_data(gtk_container_get_children((GtkContainer*)wnd_data->m_wnd), 0);
   g_object_ref(main);
   
   gtk_window_get_size(wnd_data->m_wnd, &w, &h);
   
   
-  gtk_container_remove(wnd_data->m_wnd, main);
+  gtk_container_remove((GtkContainer*)wnd_data->m_wnd, main);
   
-  m_wnd = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+  m_wnd = (GtkWindow*)gtk_window_new(GTK_WINDOW_TOPLEVEL);
   
   old_m_wnd = wnd_data->m_wnd;
   wnd_data->m_wnd = m_wnd;
@@ -1331,13 +1331,13 @@ static void display_headerbar(GtkToggleButton* self, gpointer user_data)
   if (checked) {
      create_headerbar(wnd_data);
      
-     gtk_widget_show_all(wnd_data->tHB);
+     gtk_widget_show_all((GtkWidget*)wnd_data->tHB);
     
   }
     
-  gtk_widget_destroy(old_m_wnd);
+  gtk_widget_destroy((GtkWidget*)old_m_wnd);
   
-  gtk_container_add(m_wnd, main);
+  gtk_container_add((GtkContainer*)m_wnd, (GtkWidget*)main);
    g_object_unref(main);
    
     gtk_window_set_default_size(wnd_data->m_wnd, w, h);
@@ -1360,20 +1360,20 @@ void create_main_page(GtkNotebook *notebook, struct wnd_data *wnd)
   gtk_box_pack_start(box, (GtkWidget*)box3, 1,1,0);
   
   if (wnd->tHB) {
-    GtkLabel *hb_lbl = gtk_label_new("Whem show headerbar\n (you can switch to management mode\n, where you can use full area\n of window as titlebar, by right clicking\n on page by more than 6 seconds.\n Exiting requires click on X button in upper-right corner"); 
+    GtkLabel *hb_lbl = (GtkLabel*)gtk_label_new("Whem show headerbar\n (you can switch to management mode\n, where you can use full area\n of window as titlebar, by right clicking\n on page by more than 6 seconds.\n Exiting requires click on X button in upper-right corner"); 
     
-    gtk_box_pack_start(box3, hb_lbl, 0, 0, 0);
+    gtk_box_pack_start(box3, (GtkWidget*)hb_lbl, 0, 0, 0);
     GtkRadioButton *rad = (GtkRadioButton*)
     gtk_radio_button_new_with_label_from_widget(NULL, "Only in normal mode");
-    g_signal_connect(rad, "toggled", switch_titlebar_not_always_vis, wnd);
-    gtk_box_pack_start(box3, rad, 0, 0, 0);
+    g_signal_connect(rad, "toggled", (GCallback)switch_titlebar_not_always_vis, wnd);
+    gtk_box_pack_start(box3, (GtkWidget*)rad, 0, 0, 0);
     rad= (GtkRadioButton*) gtk_radio_button_new_with_label_from_widget(rad, "Always");
-    gtk_box_pack_start(box3, rad, 0, 0, 0);
-    g_signal_connect(rad, "toggled", switch_titlebar_always_vis, wnd);
+    gtk_box_pack_start(box3, (GtkWidget*)rad, 0, 0, 0);
+    g_signal_connect(rad, "toggled", (GCallback)switch_titlebar_always_vis, wnd);
     rad = (GtkRadioButton*)
     gtk_radio_button_new_with_label_from_widget(rad, "Never");
-    g_signal_connect(rad, "toggled", switch_titlebar_never_always_vis, wnd);
-    gtk_box_pack_start(box3, rad, 0, 0, 0);
+    g_signal_connect(rad, "toggled", (GCallback)switch_titlebar_never_always_vis, wnd);
+    gtk_box_pack_start(box3, (GtkWidget*)rad, 0, 0, 0);
   }
   
   gtk_notebook_append_page(notebook, (GtkWidget*)box, NULL);
@@ -1445,7 +1445,7 @@ void create_main_page(GtkNotebook *notebook, struct wnd_data *wnd)
   
   wnd->hideTopBarCheck = checkbox;
   
-  GtkCheckButton *check = gtk_check_button_new_with_label("Use headerbar (enabling enables some extra features; changing state will restart application)");
+  GtkCheckButton *check = (GtkCheckButton*)gtk_check_button_new_with_label("Use headerbar (enabling enables some extra features; changing state will restart application)");
   
   g_signal_connect(check, "toggled", G_CALLBACK(display_headerbar), wnd);
   
@@ -1808,20 +1808,20 @@ int main(int argc, char **argv)
      wnd_data.tHB = create_headerbar(&wnd_data);
   }
   
-  GtkBox *tabsBox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
-  GtkButton *placeholder = gtk_button_new();;
+  GtkBox *tabsBox = (GtkBox*)gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+  GtkButton *placeholder = (GtkButton*) gtk_button_new();;
   
   
   GtkCssProvider *prov1 = gtk_css_provider_new();
 
   gtk_css_provider_load_from_data(prov1, "* { background: rgba(0,0,0,0); border: none; }", -1, NULL);
-  gtk_style_context_add_provider(gtk_widget_get_style_context(placeholder), prov1, GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+  gtk_style_context_add_provider(gtk_widget_get_style_context((GtkWidget*)placeholder), (GtkStyleProvider*) prov1, GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
 
-  gtk_box_pack_start(tabsBox, placeholder, 0, 1, 0);
-  gtk_box_pack_start(tabsBox, tabs, 1, 1, 0);;
+  gtk_box_pack_start(tabsBox, (GtkWidget*)placeholder, 0, 1, 0);
+  gtk_box_pack_start(tabsBox, (GtkWidget*)tabs, 1, 1, 0);;
   
-  gtk_overlay_add_overlay(m_overlay, tabsBox);
-  gtk_widget_set_size_request(tabsBox, 800, 600);
+  gtk_overlay_add_overlay(m_overlay, (GtkWidget*)tabsBox);
+  gtk_widget_set_size_request((GtkWidget*)tabsBox, 800, 600);
   
   
   
