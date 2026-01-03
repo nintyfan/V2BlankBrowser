@@ -14,7 +14,7 @@ else()
 endif()
 
 find_package(PkgConfig REQUIRED)
-pkg_check_modules(GTK REQUIRED IMPORTED_TARGET gtk+-3.0 webkit2gtk-4.0  )
+pkg_check_modules(GTK REQUIRED IMPORTED_TARGET gtk+-3.0 webkit2gtk-4.1  )
 file(GLOB BLANK_SRC main.c download.c )
 file(GLOB BLANK_BIN pl.art.lach.slawek.V2BlankBrowser.svg)
 file(GLOB META_INFO pl.art.lach.slawek.V2BlankBrowser.appdata.xml )
