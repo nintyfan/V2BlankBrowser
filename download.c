@@ -1,6 +1,6 @@
 /*
  *    V2BlankBrowser - browser with respect your monitor
- *    Copyright (C) 2021  Lach Sławomir <slawek@lach.art.pl>
+ *    Copyright (C) 2021-2026  Lach Sławomir <nintyfan19@gmail.com>
  *    
  *    This program is free software: you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License as published by
