@@ -2,13 +2,16 @@
 <!-- Created with Inkscape (http://www.inkscape.org/) -->
 
 <svg
-   width="76.65023mm"
-   height="74.971329mm"
-   viewBox="0 0 76.65023 74.971329"
+   width="86.650009mm"
+   height="86.650002mm"
+   viewBox="0 0 86.650009 86.650002"
    version="1.1"
    id="svg5"
-   inkscape:version="1.1.1 (3bf5ae0d25, 2021-09-20)"
-   sodipodi:docname="icon.svg"
+   inkscape:version="1.2.2 (b0a8486541, 2022-12-01)"
+   sodipodi:docname="Icon.svg"
+   inkscape:export-filename="Icon.svg"
+   inkscape:export-xdpi="96.120003"
+   inkscape:export-ydpi="96.120003"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns="http://www.w3.org/2000/svg"
@@ -28,22 +31,25 @@
      fit-margin-left="5"
      fit-margin-right="5"
      fit-margin-bottom="5"
-     inkscape:zoom="0.50600449"
-     inkscape:cx="6.9169347"
-     inkscape:cy="-56.323611"
-     inkscape:window-width="1366"
-     inkscape:window-height="739"
+     inkscape:zoom="1.4311968"
+     inkscape:cx="99.916376"
+     inkscape:cy="166.9931"
+     inkscape:window-width="1920"
+     inkscape:window-height="1051"
      inkscape:window-x="0"
      inkscape:window-y="0"
      inkscape:window-maximized="1"
-     inkscape:current-layer="layer1" />
+     inkscape:current-layer="layer1"
+     inkscape:showpageshadow="0"
+     inkscape:deskcolor="#d1d1d1"
+     showguides="false" />
   <defs
      id="defs2" />
   <g
      inkscape:label="Warstwa 1"
      inkscape:groupmode="layer"
      id="layer1"
-     transform="translate(-65.844131,-106.11098)">
+     transform="translate(-60.844131,-101.11098)">
     <text
        xml:space="preserve"
        style="font-style:normal;font-weight:normal;font-size:107.18px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#ff2a2a;fill-opacity:1;stroke:#000080;stroke-width:2.67951"
@@ -53,7 +59,7 @@
        transform="scale(1.2026019,0.83153037)"><tspan
          sodipodi:role="line"
          id="tspan801"
-         style="stroke-width:2.67951;fill:#ff2a2a;stroke:#000080"
+         style="fill:#ff2a2a;stroke:#000080;stroke-width:2.67951"
          x="48.389915"
          y="211.75691">B</tspan></text>
   </g>
